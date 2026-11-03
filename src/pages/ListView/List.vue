@@ -143,12 +143,17 @@
 <script lang="ts">
 import { ListViewSettings, RenderData } from 'fyo/model/types';
 import { cloneDeep } from 'lodash';
+import { getDocStatus } from 'models/helpers';
 import Button from 'src/components/Button.vue';
 import Check from 'src/components/Controls/Check.vue';
 import Paginator from 'src/components/Paginator.vue';
 import Row from 'src/components/Row.vue';
 import { fyo } from 'src/initFyo';
 import { isNumeric } from 'src/utils';
+import {
+  filterByComputedStatus,
+  splitComputedStatusFilter,
+} from 'src/utils/statusFilters';
 import { QueryFilter } from 'utils/db/types';
 import { PropType, defineComponent, toRaw } from 'vue';
 import ListCell from './ListCell.vue';
@@ -256,21 +261,15 @@ export default defineComponent({
       fyo.db.observer.on(`delete:${this.schemaName}`, listener);
       fyo.doc.observer.on(`rename:${this.schemaName}`, listener);
     },
-    async updateData(filters?: Record<string, unknown>) {
+    async updateData(filterOverrides?: Record<string, unknown>) {
       const baseFilters = cloneDeep(toRaw(this.filters));
-      filters = cloneDeep({ ...baseFilters, ...filters });
+      const filters = cloneDeep({
+        ...baseFilters,
+        ...filterOverrides,
+      }) as QueryFilter;
 
-      let statusFilter: [string, string] | undefined;
-
-      if ('status' in filters) {
-        statusFilter = filters['status'] as [string, string];
-      }
-
-      const isStatusFilter =
-        Array.isArray(statusFilter) && statusFilter[0] === 'like';
-      if (isStatusFilter) {
-        delete filters['status'];
-      }
+      const { dbFilters, statusConditions } =
+        splitComputedStatusFilter(filters);
 
       const orderBy = ['created'];
       if (fyo.db.fieldMap[this.schemaName]['date']) {
@@ -279,29 +278,35 @@ export default defineComponent({
 
       const tableData = await fyo.db.getAll(this.schemaName, {
         fields: ['*'],
-        filters: filters as QueryFilter,
+        filters: dbFilters,
         orderBy,
       });
 
-      let filteredData = tableData;
+      const schema = fyo.schemaMap[this.schemaName];
+      const filteredData = filterByComputedStatus(
+        tableData,
+        statusConditions,
+        (row) => {
+          if (!schema) {
+            return '';
+          }
 
-      if (isStatusFilter && statusFilter?.[1]) {
-        const lowercaseStatus = String(statusFilter[1]).toLowerCase();
-
-        const matchedNames = Object.entries(this.statusMap)
-          .filter((entry) => entry[1].toLowerCase() === lowercaseStatus)
-          .map((entry) => entry[0]);
-
-        filteredData = tableData.filter((row) =>
-          matchedNames.includes(String(row.name))
-        );
-      }
+          return String(
+            getDocStatus({
+              ...(row as Record<string, unknown>),
+              schema,
+              notInserted: false,
+              dirty: false,
+            } as unknown as RenderData)
+          );
+        }
+      );
 
       this.data = filteredData.map((d) => ({
         ...d,
         schema: fyo.schemaMap[this.schemaName],
       })) as RenderData[];
-      this.$emit('updatedData', filters);
+      this.$emit('updatedData', dbFilters);
     },
     toggleItemSelection(itemName: string) {
       const index = this.selectedItems.indexOf(itemName);
