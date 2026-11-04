@@ -5,7 +5,7 @@
 **Original baseline:** `stabilization-baseline` at `8a4ae666b7805c641d66af53feeab16e00d23c9a`  
 **Checkpoint tags:** `stabilization-pass-1` (`69d9616`), `stabilization-pass-2` (`55b88df`), `stabilization-pass-3` (this pass)
 
-This is the pre-enhancement stabilization checkpoint for the archived Electron/Vue/SQLite Books fork. It is intentionally **not** a claim that every upstream P0/P1 issue is closed: only reproducible/code-confirmed blockers were fixed in these passes. Pass 3 adds synthetic broken-DB reproduction, which is **not** a real user `.db`. FTS search index and scheduled jobs remain out of the enhancement scope, and no UI redesign was introduced.
+This is the pre-enhancement stabilization checkpoint for the archived Electron/Vue/SQLite Books fork. It is intentionally **not** a claim that every upstream P0/P1 issue is closed: only reproducible/code-confirmed blockers were fixed in these passes. Pass 3 adds synthetic broken-DB reproduction, which is **not** a real user `.db`. The Phase 1 design/impact note now lives in `PHASE1_DESIGN.md`; it is a design document only and no Phase 1 schema code has been written. FTS search index and scheduled jobs remain out of the enhancement scope, and no UI redesign was introduced.
 
 ## Scope decisions
 
@@ -15,7 +15,20 @@ This is the pre-enhancement stabilization checkpoint for the archived Electron/V
 - Pass 3 added synthetic broken-DB coverage for the P0 DB-open/migration path; a real user `.db` is still needed only to confirm the exact upstream reports. P1 accounting/inventory bugs still need concrete transaction data.
 - FTS search index and scheduled jobs are excluded; existing `src/utils/search.ts`, `main/initSheduler.ts`, and `jobs/` behavior is unchanged.
 - No new visual design: status filtering remains an internal list-view behavior and preserves the existing look.
-- Phase 1 design was deferred in this pass; the user chose synthetic broken-DB hardening first. The four scope-decision questions were skipped, so automatic migration/backups, one-company-per-DB, offline UBL, and the FTS/scheduled-jobs interpretation remain unconfirmed.
+- Phase 1 design was deferred in pass 3 while synthetic broken-DB hardening was completed. The four scope-decision questions have since been confirmed with their recommended defaults; see `PHASE1_DESIGN.md`.
+
+## Confirmed Phase 1 scope decisions
+
+The four decisions that were skipped during the earlier `ask_user` prompt are now confirmed as follows:
+
+| #   | Decision             | Confirmed value                         |
+| --- | -------------------- | --------------------------------------- |
+| 1   | Migration policy     | Strict automatic migration with backups |
+| 2   | Company model        | One company per DB                      |
+| 3   | Malaysia e-invoice   | Offline UBL first, in a later phase     |
+| 4   | FTS / scheduled jobs | Out of enhancement scope                |
+
+An additional Phase 1 ordering assumption was adopted: `itemWeightDigits` → Item Barcode child table → UOM parity → POS stock validator → custom-form storage decision. Full rationale, file-by-file impact, migration strategy, acceptance criteria, and implementation checkpoints are in `PHASE1_DESIGN.md`.
 
 ## Toolchain and baseline checks
 
@@ -166,5 +179,5 @@ Issue bodies to paste after reconnect:
 3. Obtain concrete accounting/inventory data to reproduce the P1 list before changing tax or stock logic.
 4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513).
 5. Keep Electron 22 upgrade (#1516) as separate platform hardening.
-6. Confirm the skipped scope decisions above before Phase 1 design.
-7. Then begin Phase 1: multi-barcode/Item Barcode child table, `itemWeightDigits`, UOM parity, POS stock validator, and custom-form storage decision — following the existing native desktop style and minimizing clicks.
+6. Scope decisions are confirmed and `PHASE1_DESIGN.md` is written; review it before implementation.
+7. Then begin Phase 1 CP1: `itemWeightDigits`, the shared barcode helper, and `tests/testBarcodes.spec.ts`; followed by multi-barcode/Item Barcode child table, UOM parity, POS stock validator, and custom-form storage decision — following the existing native desktop style and minimizing clicks.
