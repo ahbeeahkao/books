@@ -281,8 +281,9 @@ export default defineComponent({
       return !!fyo.singles.AccountingSettings?.enableDiscounting;
     },
     isPosShiftOpen: () => !!fyo.singles.POSSettings?.isShiftOpen,
-    itemVisibility() {
-      return this.itemVisibilityValue;
+    itemVisibility(): ItemVisibility {
+      return (this as unknown as { itemVisibilityValue: ItemVisibility })
+        .itemVisibilityValue;
     },
     disablePayButton(): boolean {
       if (!this.sinvDoc.items?.length || !this.sinvDoc.party) {

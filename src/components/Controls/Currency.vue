@@ -40,7 +40,7 @@ import Float from './Float.vue';
 export default defineComponent({
   name: 'Currency',
   extends: Float,
-  emits: ['input', 'focus'],
+  emits: ['input', 'focus', 'change'],
   data() {
     return {
       showInput: false,

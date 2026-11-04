@@ -1,9 +1,12 @@
 import { Fyo, t } from 'fyo';
 
+type DbErrorActionSymbol =
+  typeof dbErrorActionSymbols[keyof typeof dbErrorActionSymbols];
+
 type Conn = {
   countryCode: string;
   error?: Error;
-  actionSymbol?: typeof dbErrorActionSymbols[keyof typeof dbErrorActionSymbols];
+  actionSymbol?: DbErrorActionSymbol;
 };
 
 export const dbErrorActionSymbols = {
@@ -39,7 +42,7 @@ export async function connectToDatabase(
 export async function handleDatabaseConnectionError(
   error: Error,
   dbPath: string
-) {
+): Promise<DbErrorActionSymbol> {
   const message = error.message;
   if (typeof message !== 'string') {
     throw error;
@@ -56,21 +59,25 @@ export async function handleDatabaseConnectionError(
   throw error;
 }
 
-async function handleUnableToAcquireConnection(dbPath: string) {
+async function handleUnableToAcquireConnection(
+  dbPath: string
+): Promise<DbErrorActionSymbol> {
   return await showDbErrorDialog(
     t`Could not connect to database file ${dbPath}, please select the file manually`
   );
 }
 
-async function handleDirectoryDoesNotExist(dbPath: string) {
+async function handleDirectoryDoesNotExist(
+  dbPath: string
+): Promise<DbErrorActionSymbol> {
   return await showDbErrorDialog(
     t`Directory for database file ${dbPath} does not exist, please select the file manually`
   );
 }
 
-async function showDbErrorDialog(detail: string) {
+async function showDbErrorDialog(detail: string): Promise<DbErrorActionSymbol> {
   const { showDialog } = await import('src/utils/interactive');
-  return showDialog({
+  return (await showDialog({
     type: 'error',
     title: t`Cannot Open File`,
     detail,
@@ -90,5 +97,5 @@ async function showDbErrorDialog(detail: string) {
         isEscape: true,
       },
     ],
-  });
+  })) as DbErrorActionSymbol;
 }

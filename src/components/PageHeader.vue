@@ -14,10 +14,10 @@
       platform !== 'Windows' ? 'window-drag' : '',
     ]"
   >
-    <Transition name="spacer" class="border-none">
+    <Transition name="spacer">
       <div
         v-if="!showSidebar && platform === 'Mac' && languageDirection !== 'rtl'"
-        class="h-full"
+        class="h-full border-none"
         :class="spacerClass"
       />
     </Transition>

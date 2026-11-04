@@ -4,20 +4,26 @@
       <p class="text-center dark:text-gray-400 font-semibold py-3">Keyboard</p>
       <hr class="dark:border-gray-800" />
       <div class="mx-6 my-3">
-        <component
-          :is="selectedItemRow?.fieldMap[selectedItemField!].fieldtype"
+        <Currency
+          v-if="isCurrencyField"
           ref="dynamicInput"
-          :df="{
-            fieldname: selectedItemRow?.fieldMap[selectedItemField!].fieldname as string,
-            fieldtype: selectedItemRow?.fieldMap[selectedItemField!].fieldtype,
-            label: selectedItemRow?.fieldMap[selectedItemField!].label as string,
-          }"
+          :df="controlDf"
           class="mb-3"
           :border="true"
           :show-label="true"
           :value="selectedValue"
           :focus-input="true"
-          @change="(value: number) => handleInput(value.toString())"
+          @change="(value: unknown) => handleInput(String(value))"
+        />
+        <Float
+          v-else
+          ref="dynamicInput"
+          :df="controlDf"
+          class="mb-3"
+          :border="true"
+          :show-label="true"
+          :value="selectedValue"
+          @change="(value: unknown) => handleInput(String(value))"
         />
 
         <div
@@ -319,7 +325,7 @@
 
 <script lang="ts">
 import Modal from 'src/components/Modal.vue';
-import { ModelNameEnum } from 'models/types';
+import { Field, FieldTypeEnum } from 'schemas/types';
 import { defineComponent, inject } from 'vue';
 import Button from 'src/components/Button.vue';
 import Float from 'src/components/Controls/Float.vue';
@@ -358,6 +364,22 @@ export default defineComponent({
       selectedValue: '',
     };
   },
+  computed: {
+    field(): Field | undefined {
+      return this.selectedItemRow?.fieldMap[this.selectedItemField];
+    },
+    isCurrencyField(): boolean {
+      return this.field?.fieldtype === FieldTypeEnum.Currency;
+    },
+    controlDf(): Field {
+      const field = this.field;
+      return {
+        fieldname: field?.fieldname ?? this.selectedItemField,
+        fieldtype: field?.fieldtype ?? FieldTypeEnum.Data,
+        label: field?.label ?? this.selectedItemField,
+      } as Field;
+    },
+  },
   watch: {
     async modalStatus(newVal) {
       if (newVal) {
@@ -391,32 +413,30 @@ export default defineComponent({
     updateSelectedValue() {
       this.selectedValue = '';
 
-      if (
-        this.selectedItemRow?.fieldMap[this.selectedItemField].fieldtype !==
-        ModelNameEnum.Currency
-      ) {
-        this.selectedValue = this.selectedItemRow![
-          this.selectedItemField
-        ] as string;
+      const row = this.selectedItemRow;
+      if (!row || this.isCurrencyField) {
+        return;
       }
+
+      this.selectedValue = row[this.selectedItemField] as string;
     },
     handleInput(value: string) {
       this.selectedValue = value;
     },
     async saveSelectedItem() {
+      const row = this.selectedItemRow;
+      if (!row) {
+        return;
+      }
+
       try {
-        if (
-          this.selectedItemRow?.fieldMap[this.selectedItemField].fieldtype ===
-          ModelNameEnum.Currency
-        ) {
-          this.selectedItemRow[this.selectedItemField] = this.fyo.pesa(
+        if (this.isCurrencyField) {
+          row[this.selectedItemField] = this.fyo.pesa(
             Number(this.selectedValue)
           );
 
           if (this.selectedItemField === 'rate') {
-            this.selectedItemRow.setRate = this.fyo.pesa(
-              Number(this.selectedValue)
-            );
+            row.setRate = this.fyo.pesa(Number(this.selectedValue));
 
             await this.sinvDoc.runFormulas();
             this.$emit('toggleModal', 'Keyboard');
@@ -426,9 +446,7 @@ export default defineComponent({
 
           if (this.selectedItemField === 'itemDiscountAmount') {
             if (this.sinvDoc.grandTotal?.lte(this.selectedValue)) {
-              this.selectedItemRow.itemDiscountAmount = this.fyo.pesa(
-                Number(0)
-              );
+              row.itemDiscountAmount = this.fyo.pesa(Number(0));
 
               throw new ValidationError(
                 this.fyo.t`Discount Amount (${this.fyo.format(
@@ -441,20 +459,18 @@ export default defineComponent({
               );
             }
 
-            await this.selectedItemRow.set('setItemDiscountAmount', true);
-            await this.selectedItemRow.set(
+            await row.set('setItemDiscountAmount', true);
+            await row.set(
               'itemDiscountAmount',
               this.fyo.pesa(Number(this.selectedValue))
             );
           }
         } else {
-          this.selectedItemRow![this.selectedItemField] = Number(
-            this.selectedValue
-          );
+          row[this.selectedItemField] = Number(this.selectedValue);
 
           if (this.selectedItemField === 'itemDiscountPercent') {
             if (Number(this.selectedValue) > 100) {
-              await this.selectedItemRow?.set('itemDiscountPercent', 0);
+              await row.set('itemDiscountPercent', 0);
 
               throw new ValidationError(
                 this.fyo
@@ -462,26 +478,18 @@ export default defineComponent({
               );
             }
 
-            await this.selectedItemRow?.set('setItemDiscountAmount', false);
-            await this.selectedItemRow?.set(
-              'itemDiscountPercent',
-              this.selectedValue
-            );
+            await row.set('setItemDiscountAmount', false);
+            await row.set('itemDiscountPercent', this.selectedValue);
           }
 
           if (this.selectedItemField === 'quantity') {
             const existingItems =
               this.sinvDoc.items?.filter(
                 (invoiceItem: InvoiceItem) =>
-                  invoiceItem.item === this.selectedItemRow?.item &&
-                  !invoiceItem.isFreeItem
+                  invoiceItem.item === row.item && !invoiceItem.isFreeItem
               ) ?? [];
 
-            await validateQty(
-              this.sinvDoc,
-              this.selectedItemRow,
-              existingItems
-            );
+            await validateQty(this.sinvDoc, row, existingItems);
 
             this.$emit('applyPricingRule');
           }
