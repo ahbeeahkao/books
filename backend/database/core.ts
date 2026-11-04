@@ -395,6 +395,35 @@ export default class DatabaseCore extends DatabaseBase {
     return false;
   }
 
+  #getMissingFieldFallback(field: Field): RawValue | undefined {
+    /**
+     * A legacy row can be missing a column that the current schema marks as
+     * required. Rebuilding the table would then fail with a NOT NULL constraint
+     * when the undefined value is copied into the temp table. Prefer the schema
+     * default, then a type-safe fallback for required fields.
+     */
+    if (field.default !== undefined) {
+      return field.default;
+    }
+
+    if (!field.required) {
+      return undefined;
+    }
+
+    switch (field.fieldtype) {
+      case FieldTypeEnum.Int:
+      case FieldTypeEnum.Float:
+      case FieldTypeEnum.Currency:
+        return 0;
+      case FieldTypeEnum.Check:
+        return false;
+      case FieldTypeEnum.Datetime:
+        return new Date().toISOString();
+      default:
+        return '';
+    }
+  }
+
   async prestigeTheTable(schemaName: string, tableRows: FieldValueMap[]) {
     /**
      * SQLite cannot safely drop columns or add foreign keys while foreign key
@@ -416,11 +445,11 @@ export default class DatabaseCore extends DatabaseBase {
 
         if (value !== undefined) {
           next[fieldname] = value;
-        } else if (field.default !== undefined) {
-          next[fieldname] = field.default;
-        } else {
-          next[fieldname] = undefined;
+          continue;
         }
+
+        const fallback = this.#getMissingFieldFallback(field);
+        next[fieldname] = fallback;
       }
 
       return next;

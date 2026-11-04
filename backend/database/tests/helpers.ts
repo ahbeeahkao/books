@@ -5,6 +5,7 @@ import {
   cleanSchemas,
   getAbstractCombinedSchemas,
 } from '../../../schemas';
+import Misc from '../../../schemas/app/Misc.json';
 import SingleValue from '../../../schemas/core/SingleValue.json';
 import { SchemaMap, SchemaStub, SchemaStubMap } from '../../../schemas/types';
 
@@ -152,7 +153,7 @@ const SystemSettings = {
   keywordFields: [],
 };
 
-export function getBuiltTestSchemaMap(): SchemaMap {
+export function getBuiltTestSchemaMap(includeMisc = false): SchemaMap {
   const testSchemaMap: SchemaStubMap = {
     SingleValue: SingleValue as SchemaStub,
     Customer: Customer as SchemaStub,
@@ -160,6 +161,10 @@ export function getBuiltTestSchemaMap(): SchemaMap {
     SalesInvoiceItem: SalesInvoiceItem as SchemaStub,
     SystemSettings: SystemSettings as SchemaStub,
   };
+
+  if (includeMisc) {
+    testSchemaMap.Misc = Misc as SchemaStub;
+  }
 
   const schemaMapClone = cloneDeep(testSchemaMap);
   const abstractCombined = getAbstractCombinedSchemas(schemaMapClone);

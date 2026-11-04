@@ -1,20 +1,21 @@
-# Stabilization passes 1–2
+# Stabilization passes 1–3
 
 **Date:** 2026-11-04  
 **Branch:** `arena/a27de3bc-books`  
 **Original baseline:** `stabilization-baseline` at `8a4ae666b7805c641d66af53feeab16e00d23c9a`  
-**Checkpoint tags:** `stabilization-pass-1` (commit `69d9616`), `stabilization-pass-2` (this pass)
+**Checkpoint tags:** `stabilization-pass-1` (`69d9616`), `stabilization-pass-2` (`55b88df`), `stabilization-pass-3` (this pass)
 
-This is the pre-enhancement stabilization checkpoint for the archived Electron/Vue/SQLite Books fork. It is intentionally **not** a claim that every upstream P0/P1 issue is closed: only reproducible/code-confirmed blockers were fixed in these passes. FTS search index and scheduled jobs remain out of the enhancement scope, and no UI redesign was introduced.
+This is the pre-enhancement stabilization checkpoint for the archived Electron/Vue/SQLite Books fork. It is intentionally **not** a claim that every upstream P0/P1 issue is closed: only reproducible/code-confirmed blockers were fixed in these passes. Pass 3 adds synthetic broken-DB reproduction, which is **not** a real user `.db`. FTS search index and scheduled jobs remain out of the enhancement scope, and no UI redesign was introduced.
 
 ## Scope decisions
 
 - Stabilization comes before Phase 1 enhancement.
 - Fork Issues are enabled and labels were created, but issue creation is currently blocked by the Arena GitHub App token (see below).
 - Electron / packaging upgrade (`#1516`) is separate hardening and does not gate schema work.
-- Remaining P0 DB-open/restore bugs and P1 accounting/inventory bugs need sample company `.db` files or concrete reproduction data.
+- Pass 3 added synthetic broken-DB coverage for the P0 DB-open/migration path; a real user `.db` is still needed only to confirm the exact upstream reports. P1 accounting/inventory bugs still need concrete transaction data.
 - FTS search index and scheduled jobs are excluded; existing `src/utils/search.ts`, `main/initSheduler.ts`, and `jobs/` behavior is unchanged.
 - No new visual design: status filtering remains an internal list-view behavior and preserves the existing look.
+- Phase 1 design was deferred in this pass; the user chose synthetic broken-DB hardening first. The four scope-decision questions were skipped, so automatic migration/backups, one-company-per-DB, offline UBL, and the FTS/scheduled-jobs interpretation remain unconfirmed.
 
 ## Toolchain and baseline checks
 
@@ -22,7 +23,7 @@ Local environment: Node `v22.22.3`, Yarn `1.22.22`, npm `10.9.8`; README expects
 
 `better-sqlite3@9.3.0` from the locked tree does **not** compile against Node 22.22.3 headers (V8 `AccessControl` / `PropertyAttribute` mismatch). For local verification only, `better-sqlite3@9.6.0` was installed with `--no-save --no-package-lock --ignore-scripts` and rebuilt with npm's bundled `node-gyp` against `/tmp/node-headers`; the repository dependency range was **not** changed. The direct-Node test runner also used local-only `global-jsdom@9.2.0` / `jsdom@23.2.0`, a `.vue` require stub, and a minimal `ipc.store` stub because Electron's binary is not downloaded and `scripts/runner.sh` needs zsh + Electron Node. `node_modules` and `dist_electron` are git-ignored.
 
-Verification commands used in pass 2:
+Verification commands used in passes 2–3:
 
 ```bash
 # Full tape suite, bypassing scripts/runner.sh (which needs Electron's node + zsh).
@@ -40,11 +41,22 @@ node build/scripts/build.mjs --nopackage
 
 Results:
 
+Pass 2 results:
+
 - Full suite: **965 / 965 passing** across 26 spec files (955 pass-1 assertions plus 10 new pass-2 assertions).
 - ESLint: **0 errors, 0 warnings** with the locked toolchain and current `.eslintrc.js` ignore patterns. All changed files are Prettier-clean.
 - Typecheck: **0 errors**. The pass-1 19-error list below is resolved; the earlier 3-error result from an unlocked `npx vue-tsc@6.0.3` was stale.
 - Build: `--nopackage` passed; Vite emitted only pre-existing dynamic-import / chunk-size warnings.
-- `git status`: only the pass-2 source/test files below are modified or untracked; pass-1 artifacts are already tracked in `69d9616`.
+
+Pass 3 results:
+
+- Full suite: **1024 / 1024 passing** across 27 spec files (59 new synthetic broken-DB assertions).
+- Targeted new spec alone: **59 / 59 passing**.
+- ESLint: **0 errors, 0 warnings**.
+- Typecheck: **0 errors**.
+- Prettier check on all changed files: clean.
+- Build: `--nopackage` passed; Vite emitted only pre-existing dynamic-import / chunk-size warnings.
+- `git status`: only the pass-3 source/test/doc files below are modified or untracked; pass-1 and pass-2 artifacts are already pushed.
 
 ## Fixes in pass 1
 
@@ -90,9 +102,37 @@ With the locked TypeScript 4.6.2 / vue-tsc 1.6.5 toolchain, the first full `vue-
 
 These are type-safety and correctness fixes, not a visual redesign. FTS/scheduled jobs remain untouched.
 
+## Fixes in pass 3: synthetic broken-DB reproduction
+
+The user selected synthetic broken-DB hardening before Phase 1 design. These tests write small SQLite files with deliberately older/corrupt schema shapes, then run the same `DatabaseCore.migrate()` path the app uses. They are **synthetic reproductions**, not real user `.db` files, and do not close the upstream reports by themselves.
+
+### Real bug found and fixed
+
+`prestigeTheTable` copied legacy rows into a temp table built from the current schema. If a legacy row was missing a column that the current schema marks as required and has no default, the rebuild failed with `NOT NULL constraint failed` (reproduced with a legacy `SingleValue` table lacking `value`).
+
+Changes:
+
+- `backend/database/core.ts`: added `#getMissingFieldFallback(field)`. `prestigeTheTable` now prefers `field.default`, then a type-safe fallback for required fields (`0` for numeric/Currency, `false` for Check, current ISO string for Datetime, `''` for Data/Link/etc.), and still leaves optional missing fields undefined. This prevents a rebuild from silently dropping the row or crashing on a required-column copy.
+- `backend/database/tests/helpers.ts`: `getBuiltTestSchemaMap(includeMisc = false)` can now include the real `Misc` Single schema so `openCount` can be exercised.
+
+### New regression suite
+
+`backend/database/tests/testSyntheticBrokenDatabases.spec.ts` adds 6 tests / 59 assertions:
+
+1. Legacy `Customer` / `SalesInvoice` tables with extra columns and enforced FKs: migration drops the legacy columns, preserves parent, invoice, and child rows, restores FK enforcement, leaves no `__*` temp tables, and passes `foreign_key_check` / `integrity_check`.
+2. Legacy `SalesInvoice` without a `customer` foreign key: migration detects the new Link FK, rebuilds, adds the FK, preserves rows, and enforces delete restriction.
+3. New required `Int` column with a default: additive `ALTER TABLE` path adds the column and populates existing rows with the default without a rebuild.
+4. Missing `SingleValue` table: migration recreates it, initializes `SystemSettings` / `Misc` defaults, and `Misc.openCount` can be written and read (synthetic #1546 shape).
+5. Legacy `SingleValue` table with no `value` column and an extra `legacy_note`: migration rebuilds it, drops the legacy column, fills the preserved row's required `value` with the fallback, inserts missing defaults, and still accepts `openCount` writes.
+6. Legacy row missing a required Link column: migration fails loudly with `foreign key check failed after rebuilding SalesInvoice` instead of silently assigning an invalid parent, and FK enforcement is restored.
+
+Every healthy case asserts `PRAGMA foreign_keys=ON`, empty `PRAGMA foreign_key_check`, `PRAGMA integrity_check=ok`, and no leftover temp tables.
+
+These tests do not change FTS/scheduled jobs, do not introduce a UI redesign, and do not start Phase 1 enhancement.
+
 ## Fork issue tracking
 
-Issues are enabled on `ahbeeahkao/books`. Labels `P0`, `P1`, `upstream`, `stabilization`, and `triage` exist. Issue creation is **still blocked** after a pass-2 re-probe: `gh api repos/... -q '.permissions'` reports `admin/maintain/pull/push/triage` but no `issues=write`; both `gh issue create` (GraphQL) and `gh api POST /repos/.../issues` (REST) return:
+Issues are enabled on `ahbeeahkao/books`. Labels `P0`, `P1`, `upstream`, `stabilization`, and `triage` exist. Issue creation is **still blocked** after the pass-2 re-probe; pass 3 did not retry it: `gh api repos/... -q '.permissions'` reports `admin/maintain/pull/push/triage` but no `issues=write`; both `gh issue create` (GraphQL) and `gh api POST /repos/.../issues` (REST) return:
 
 ```text
 403 Resource not accessible by integration
@@ -101,20 +141,20 @@ X-Accepted-Github-Permissions: issues=write
 
 `gh issue list --repo ahbeeahkao/books --state all` remains `[]`. Reconnect GitHub in Arena or grant Issues write permission, then create the following six tracking issues.
 
-| Title                                                                | Labels                                   | Upstream references                           | Status                                                                                 |
-| -------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Stabilization baseline: triage upstream bugs before enhancement      | `stabilization`, `triage`                | umbrella                                      | Triage done; local tracking here                                                       |
-| P0: foreign key constraint failed while opening/restoring company DB | `bug`, `P0`, `upstream`, `stabilization` | #1536, #1351, #1291                           | Likely root cause fixed + regression test; real broken `.db` reproduction still needed |
-| P0: database file unavailable while writing SingleValue openCount    | `bug`, `P0`, `upstream`, `triage`        | #1546                                         | Not reproduced                                                                         |
-| P0: computed status filter leaks into SQL (no such column: status)   | `bug`, `P0`, `upstream`, `stabilization` | #1446                                         | Fixed + regression test                                                                |
-| P0: developer/release baseline before schema work                    | `bug`, `P0`, `upstream`, `triage`        | #1444, #1515, #1513; #1516 separate           | Type baseline fixed; release, ARM64 packaging remain                                   |
-| P1: accounting and inventory correctness triage                      | `bug`, `P1`, `upstream`, `triage`        | #1538, #1539, #1540, #819, #842, #1277, #1431 | Triage only; needs reproduction data                                                   |
+| Title                                                                | Labels                                   | Upstream references                           | Status                                                                            |
+| -------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
+| Stabilization baseline: triage upstream bugs before enhancement      | `stabilization`, `triage`                | umbrella                                      | Triage done; local tracking here                                                  |
+| P0: foreign key constraint failed while opening/restoring company DB | `bug`, `P0`, `upstream`, `stabilization` | #1536, #1351, #1291                           | Code fix + synthetic broken-DB suite; real `.db` still needed to confirm upstream |
+| P0: database file unavailable while writing SingleValue openCount    | `bug`, `P0`, `upstream`, `triage`        | #1546                                         | Synthetic missing/legacy SingleValue reproduced; real `.db` still needed          |
+| P0: computed status filter leaks into SQL (no such column: status)   | `bug`, `P0`, `upstream`, `stabilization` | #1446                                         | Fixed + regression test                                                           |
+| P0: developer/release baseline before schema work                    | `bug`, `P0`, `upstream`, `triage`        | #1444, #1515, #1513; #1516 separate           | Type baseline fixed; release, ARM64 packaging remain                              |
+| P1: accounting and inventory correctness triage                      | `bug`, `P1`, `upstream`, `triage`        | #1538, #1539, #1540, #819, #842, #1277, #1431 | Triage only; needs reproduction data                                              |
 
 Issue bodies to paste after reconnect:
 
 1. **Stabilization baseline** — umbrella for the pre-enhancement pass; baseline `8a4ae666b7805c641d66af53feeab16e00d23c9a`; reproduce P0/P1, fix confirmed blockers, tag checkpoint, then Phase 1. FTS/scheduled jobs out of scope.
-2. **P0 DB foreign keys** — copy #1536 / #1351 / #1291; acceptance: older schema with removed columns and link fields migrates without FK errors, data preserved, FK enforcement restored, regression test added.
-3. **P0 DB file unavailable** — copy #1546; acceptance: reproduce against `0.37.0-dev`, clear error/recovery path, no silent data loss, regression test where feasible.
+2. **P0 DB foreign keys** — copy #1536 / #1351 / #1291; acceptance: older schema with removed columns and link fields migrates without FK errors, data preserved, FK enforcement restored, regression test added. Pass 3 added synthetic removed-column/FK regression coverage; a real broken `.db` is still needed to confirm the upstream reports.
+3. **P0 DB file unavailable** — copy #1546; acceptance: reproduce against `0.37.0-dev`, clear error/recovery path, no silent data loss, regression test where feasible. Pass 3 added synthetic missing/legacy `SingleValue` and `openCount` write coverage; a real `0.37.0-dev` DB is still needed.
 4. **P0 status filter** — copy #1446; acceptance: all computed-status operators are client-side, no SQL references `status`, regression test added.
 5. **P0 developer/release baseline** — copy #1444 / #1515 / #1513, keep #1516 separate; acceptance: documented toolchain, reproducible test/lint/typecheck commands, fork version policy, packaging verification. Type baseline is now clean; release policy and ARM64 packaging remain.
 6. **P1 accounting/inventory** — copy #1538 / #1539 / #1540 / #819 / #842 / #1277 / #1431; each must be reproduced before a fix; confirmed fixes require regression tests.
@@ -122,8 +162,9 @@ Issue bodies to paste after reconnect:
 ## Remaining before Phase 1 enhancement
 
 1. Reconnect GitHub with `issues=write` and create the six tracking issues above.
-2. Obtain a sample broken company `.db` to reproduce #1536 / #1546 / #1351 / #1291 end-to-end.
+2. Optional: obtain a real broken company `.db` to confirm #1536 / #1546 / #1351 / #1291 end-to-end. Pass 3 already added synthetic reproduction; this is no longer a hard gate for Phase 1.
 3. Obtain concrete accounting/inventory data to reproduce the P1 list before changing tax or stock logic.
 4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513).
 5. Keep Electron 22 upgrade (#1516) as separate platform hardening.
-6. Then begin Phase 1: multi-barcode/Item Barcode child table, `itemWeightDigits`, UOM parity, POS stock validator, and custom-form storage decision — following the existing native desktop style and minimizing clicks.
+6. Confirm the skipped scope decisions above before Phase 1 design.
+7. Then begin Phase 1: multi-barcode/Item Barcode child table, `itemWeightDigits`, UOM parity, POS stock validator, and custom-form storage decision — following the existing native desktop style and minimizing clicks.
