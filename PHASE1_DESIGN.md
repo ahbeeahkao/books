@@ -18,7 +18,7 @@ The four previously skipped decisions are now confirmed with their **recommended
 | 3   | Malaysia e-invoice   | **Offline UBL first** in a later phase. No direct MyInvois API and no GPL component copied into core schemas now.                                             |
 | 4   | FTS / scheduled jobs | **Out of enhancement scope**. `src/utils/search.ts`, `main/initSheduler.ts`, and `jobs/` remain unchanged.                                                    |
 
-An extra planning assumption is also adopted: **Phase 1 order** is `itemWeightDigits` → Item Barcode child table → UOM parity → POS stock validator → custom-form storage decision.
+A fifth planning assumption, **Phase 1 order**, was **not** one of the four user-confirmed decisions and remains **unconfirmed**. For checkpoint planning only, this note uses the working sequence `itemWeightDigits` → Item Barcode child table → UOM parity → POS stock validator → custom-form storage decision. The checkpoint order can be changed without altering the confirmed scope.
 
 ## Baseline
 
@@ -329,7 +329,7 @@ New regression specs:
 
 Existing migration suites `backend/database/tests/testMigration.spec.ts` and `backend/database/tests/testSyntheticBrokenDatabases.spec.ts` must stay green.
 
-## Implementation checkpoints
+## Proposed implementation checkpoints (order not user-confirmed)
 
 1. **CP1 — `itemWeightDigits` + single barcode helper.** Add the setting, extract `src/utils/barcodes.ts`, wire/refactor `Barcode.vue` / `WeightEnabledBarcode.vue` / `CommonForm.vue` / `POS.vue`, add barcode tests.
 2. **CP2 — Item Barcode child table.** Add `ItemBarcode.json`, register schema/enum, add `Item.barcodes`, backfill patch, duplicate validation, multi-barcode POS resolution, migration test.
@@ -350,4 +350,4 @@ Each checkpoint gets its own commit on `arena/a27de3bc-books`, then push. A `pha
 
 ## Next action
 
-After approval of this design note, begin **CP1** with a small commit: add `itemWeightDigits` to `POSSettings.json`, create `src/utils/barcodes.ts`, and add `tests/testBarcodes.spec.ts`. No Item Barcode child-table schema changes until CP1 is verified.
+After approval of this design note **and confirmation of the proposed checkpoint order**, begin **CP1** with a small commit: add `itemWeightDigits` to `POSSettings.json`, create `src/utils/barcodes.ts`, and add `tests/testBarcodes.spec.ts`. No Item Barcode child-table schema changes until CP1 is verified.

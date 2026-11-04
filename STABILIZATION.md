@@ -28,7 +28,7 @@ The four decisions that were skipped during the earlier `ask_user` prompt are no
 | 3   | Malaysia e-invoice   | Offline UBL first, in a later phase     |
 | 4   | FTS / scheduled jobs | Out of enhancement scope                |
 
-An additional Phase 1 ordering assumption was adopted: `itemWeightDigits` → Item Barcode child table → UOM parity → POS stock validator → custom-form storage decision. Full rationale, file-by-file impact, migration strategy, acceptance criteria, and implementation checkpoints are in `PHASE1_DESIGN.md`.
+A fifth planning assumption about Phase 1 ordering is **not** one of the four confirmed decisions and remains unconfirmed; `PHASE1_DESIGN.md` uses it only as a proposed checkpoint sequence. Full rationale, file-by-file impact, migration strategy, acceptance criteria, and implementation checkpoints are in `PHASE1_DESIGN.md`.
 
 ## Toolchain and baseline checks
 
@@ -180,4 +180,4 @@ Issue bodies to paste after reconnect:
 4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513).
 5. Keep Electron 22 upgrade (#1516) as separate platform hardening.
 6. Scope decisions are confirmed and `PHASE1_DESIGN.md` is written; review it before implementation.
-7. Then begin Phase 1 CP1: `itemWeightDigits`, the shared barcode helper, and `tests/testBarcodes.spec.ts`; followed by multi-barcode/Item Barcode child table, UOM parity, POS stock validator, and custom-form storage decision — following the existing native desktop style and minimizing clicks.
+7. After review and confirmation of the proposed checkpoint order, begin Phase 1 CP1: `itemWeightDigits`, the shared barcode helper, and `tests/testBarcodes.spec.ts`; followed by multi-barcode/Item Barcode child table, UOM parity, POS stock validator, and custom-form storage decision — following the existing native desktop style and minimizing clicks.
