@@ -3,9 +3,9 @@
 **Date:** 2026-11-04  
 **Branch:** `arena/a27de3bc-books` (active)  
 **Baseline:** `0a4be28` / `stabilization-pass-3`  
-**Status:** design only — **no schema or application code has been changed for Phase 1 yet**
+**Status:** CP1–CP5 implemented; PR creation is the final step
 
-This note converts the confirmed roadmap decisions into a concrete pre-implementation plan for the archived Electron/Vue/SQLite Books fork. It is the checkpoint before touching schemas.
+This note converted the confirmed roadmap decisions into a concrete implementation plan for the archived Electron/Vue/SQLite Books fork and now records the CP1–CP5 outcomes.
 
 ## Confirmed scope decisions
 
@@ -18,7 +18,7 @@ The four previously skipped decisions are now confirmed with their **recommended
 | 3   | Malaysia e-invoice   | **Offline UBL first** in a later phase. No direct MyInvois API and no GPL component copied into core schemas now.                                             |
 | 4   | FTS / scheduled jobs | **Out of enhancement scope**. `src/utils/search.ts`, `main/initSheduler.ts`, and `jobs/` remain unchanged.                                                    |
 
-A fifth planning assumption, **Phase 1 order**, was **not** one of the four user-confirmed decisions and remains **unconfirmed**. For checkpoint planning only, this note uses the working sequence `itemWeightDigits` → Item Barcode child table → UOM parity → POS stock validator → custom-form storage decision. The checkpoint order can be changed without altering the confirmed scope.
+A fifth planning assumption, **Phase 1 order**, was **not** one of the four user-confirmed decisions and was initially unconfirmed. The user later confirmed `CP4 then CP5, then create PR`; CP1–CP3 had already been implemented in the working sequence `itemWeightDigits` → Item Barcode child table → UOM parity. The other four decisions remain confirmed.
 
 ## Baseline
 
@@ -266,19 +266,23 @@ Rationale:
 - Automatic migration with backups applies to core schema changes; user custom fields should remain data, not schema files.
 - The existing `rawCustomFields` merge already works and avoids a second storage path.
 
-### Proposed changes
+**Status:** implemented in CP5; no storage migration.
 
-1. Document the decision here and in `STABILIZATION.md`; no storage migration.
-2. Add a regression test that a `CustomField` row survives `DatabaseManager.connectToDatabase()` / backup / `db.migrate()` and is present in `getSchemaMap()`.
-3. Exclude `ItemBarcode`, `CustomField`, `CustomForm`, `PatchRun`, `SingleValue`, and `SetupWizard` from `CustomizeForm.vue` / `CustomField.ts` target lists as appropriate, so child/internal tables are not offered as customizable parents.
-4. Defer any larger Customize Form UI completion; it is not required for Phase 1 barcode/UOM/stock work.
+### Implemented changes
+
+1. Documented the decision here and in `STABILIZATION.md`; no storage migration.
+2. Added `backend/database/tests/testCustomFieldsMigration.spec.ts`: a `CustomField` row survives `DatabaseManager.connectToDatabase()` and `db.migrate()`, is loaded into `rawCustomFields` and `getSchemaMap()`, and is absent from the static schema map.
+3. Added `src/utils/customForm.ts` and used it from `CustomizeForm.vue`, `CustomField.ts`, and `CustomForm.ts` to exclude `isSingle` / `isChild` schemas plus `ItemBarcode`, `CustomField`, `CustomForm`, `NumberSeries`, `PatchRun`, `SingleValue`, and `SetupWizard`.
+4. Deferred any larger Customize Form UI completion; it is not required for Phase 1 barcode/UOM/stock work.
 
 ### Files
 
 - `PHASE1_DESIGN.md`, `STABILIZATION.md`
-- `backend/database/tests/testCustomFieldsMigration.spec.ts` (new, if needed)
+- `src/utils/customForm.ts` (new)
+- `backend/database/tests/testCustomFieldsMigration.spec.ts` (new)
 - `src/pages/CustomizeForm/CustomizeForm.vue`
 - `fyo/models/CustomField.ts`
+- `fyo/models/CustomForm.ts`
 
 ---
 
@@ -325,11 +329,11 @@ New regression specs:
 - `tests/testUomParity.spec.ts`
 - `tests/testPosStockValidator.spec.ts`
 - `backend/database/tests/testItemBarcodeMigration.spec.ts`
-- optional `backend/database/tests/testCustomFieldsMigration.spec.ts`
+- `backend/database/tests/testCustomFieldsMigration.spec.ts`
 
 Existing migration suites `backend/database/tests/testMigration.spec.ts` and `backend/database/tests/testSyntheticBrokenDatabases.spec.ts` must stay green.
 
-## Proposed implementation checkpoints (order not user-confirmed)
+## Implementation checkpoints (CP4/CP5 order confirmed)
 
 1. **CP1 — `itemWeightDigits` + single barcode helper.** Add the setting, extract `src/utils/barcodes.ts`, wire/refactor `Barcode.vue` / `WeightEnabledBarcode.vue` / `CommonForm.vue` / `POS.vue`, add barcode tests.
 2. **CP2 — Item Barcode child table.** Add `ItemBarcode.json`, register schema/enum, add `Item.barcodes`, backfill patch, duplicate validation, multi-barcode POS resolution, migration test.
@@ -337,7 +341,7 @@ Existing migration suites `backend/database/tests/testMigration.spec.ts` and `ba
 4. **CP4 — POS stock validator.** Extract the shared validator, remove duplicate checks, add stock tests.
 5. **CP5 — Custom-form decision.** Document/test per-DB storage, tighten exclusions; no storage migration.
 
-Each checkpoint gets its own commit on `arena/a27de3bc-books`, then push. A `phase-1` series of tags is optional; no tag is created by this design note.
+Each checkpoint has its own commit and push on `arena/a27de3bc-books`. A `phase-1` series of tags is optional; no checkpoint tag was created. A PR is opened after CP5.
 
 ## Open items / residual risk
 

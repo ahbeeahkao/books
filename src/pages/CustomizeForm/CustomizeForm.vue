@@ -56,7 +56,7 @@ import DropdownWithActions from 'src/components/DropdownWithActions.vue';
 import Button from 'src/components/Button.vue';
 import PageHeader from 'src/components/PageHeader.vue';
 import AutoComplete from 'src/components/Controls/AutoComplete.vue';
-import { ModelNameEnum } from 'models/types';
+import { getCustomizableSchemas } from 'src/utils/customForm';
 
 export default defineComponent({
   components: { PageHeader, Button, DropdownWithActions, AutoComplete },
@@ -65,29 +65,7 @@ export default defineComponent({
   },
   computed: {
     customizableSchemas() {
-      const schemaNames = Object.keys(this.fyo.schemaMap).filter(
-        (schemaName) => {
-          const schema = this.fyo.schemaMap[schemaName];
-          if (!schema) {
-            return false;
-          }
-
-          if (schema?.isSingle) {
-            return false;
-          }
-
-          return ![
-            ModelNameEnum.NumberSeries,
-            ModelNameEnum.SingleValue,
-            ModelNameEnum.SetupWizard,
-            ModelNameEnum.PatchRun,
-          ].includes(schemaName as ModelNameEnum);
-        }
-      );
-      return schemaNames.map((sn) => ({
-        value: sn,
-        label: this.fyo.schemaMap[sn]?.label ?? sn,
-      }));
+      return getCustomizableSchemas(this.fyo.schemaMap);
     },
     helpMessage() {
       if (!this.formType) {

@@ -9,7 +9,7 @@ import type {
 } from 'fyo/model/types';
 import { ValueError } from 'fyo/utils/errors';
 import { camelCase } from 'lodash';
-import { ModelNameEnum } from 'models/types';
+import { getCustomizableSchemas } from 'src/utils/customForm';
 import type { FieldType } from 'schemas/types';
 import { FieldTypeEnum } from 'schemas/types';
 import type { CustomForm } from './CustomForm';
@@ -93,25 +93,7 @@ export class CustomField extends Doc {
   };
 
   static lists: ListsMap = {
-    target: (doc) => {
-      const schemaMap = doc?.fyo.schemaMap ?? {};
-      return Object.values(schemaMap)
-        .filter(
-          (s) =>
-            !s?.isSingle &&
-            ![
-              ModelNameEnum.PatchRun,
-              ModelNameEnum.SingleValue,
-              ModelNameEnum.CustomField,
-              ModelNameEnum.CustomForm,
-              ModelNameEnum.SetupWizard,
-            ].includes(s?.name as ModelNameEnum)
-        )
-        .map((s) => ({
-          label: s?.label ?? '',
-          value: s?.name ?? '',
-        }));
-    },
+    target: (doc) => getCustomizableSchemas(doc?.fyo.schemaMap ?? {}),
     references: (doc) => {
       if (!(doc instanceof CustomField)) {
         return [];

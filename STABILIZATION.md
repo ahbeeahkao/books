@@ -98,7 +98,7 @@ Phase 1 CP3 results (the third proposed checkpoint; checkpoint order is not sepa
 - `tests/testUomParity.spec.ts` adds 68 assertions covering schema parity, the computed UOM alias, conversion validation, feature-gated hidden/required maps, `Item.validate()`, fractional stock and transfer quantities, transaction-row validators, configured weight UOMs, and scan resolution with UOM/conversion rows.
 - Full suite: **1167 / 1167 passing** across 30 spec files; combined targeted CP1/CP2/CP3 migration, barcode, and UOM specs: **147 / 147 passing**.
 - ESLint: **0 errors, 0 warnings**; typecheck: **0 errors**; Prettier 2.4.1 on changed files: clean; build `--nopackage`: passed with only pre-existing Vite warnings.
-- CP5, FTS/scheduled jobs, and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction.
+- FTS/scheduled jobs and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction.
 
 Phase 1 CP4 results (the fourth checkpoint; the user confirmed `CP4 then CP5, then create PR`):
 
@@ -108,7 +108,17 @@ Phase 1 CP4 results (the fourth checkpoint; the user confirmed `CP4 then CP5, th
 - `tests/testPosStockValidator.spec.ts` adds 26 assertions covering total/batch availability, zero stock, over-quantity add-item and final validation, batch splits, return and non-inventory bypasses, free items, invalid quantities, and weight-barcode quantities.
 - Full suite: **1193 / 1193 passing** across 31 spec files; targeted CP4 spec: **26 / 26 passing**.
 - ESLint: **0 errors, 0 warnings**; typecheck: **0 errors**; Prettier 2.4.1 on changed files: clean; build `--nopackage`: passed with only pre-existing Vite warnings.
-- CP5, FTS/scheduled jobs, and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction.
+- FTS/scheduled jobs and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction.
+
+Phase 1 CP5 results (the fifth checkpoint; the user confirmed `CP4 then CP5, then create PR`):
+
+- The decision is **keep custom fields/forms stored per company DB**. `CustomField` rows remain data read by `DatabaseManager.setRawCustomFields()` and merged by `getSchemas()`; they are not promoted into static `schemas/app/*.json` files and no storage migration was added.
+- `src/utils/customForm.ts` centralizes customizable-schema exclusions. `CustomizeForm.vue`, `CustomField.ts`, and `CustomForm.ts` now share it, excluding `isSingle` / `isChild` schemas plus `ItemBarcode`, `CustomField`, `CustomForm`, `NumberSeries`, `PatchRun`, `SingleValue`, and `SetupWizard`.
+- `backend/database/tests/testCustomFieldsMigration.spec.ts` adds 17 assertions. A `CustomField` row survives `DatabaseManager.connectToDatabase()` and `db.migrate()`, is loaded into `rawCustomFields` and `getSchemaMap()`, is marked `isCustom`, and is absent from the static schema map. Backup creation remains skipped under `IS_TEST`; the migration/backfill path is still exercised.
+- `PHASE1_DESIGN.md` now records the confirmed CP4/CP5/PR order, the CP5 decision status, and the implemented file list.
+- Full suite: **1210 / 1210 passing** across 32 spec files; targeted CP5 spec: **17 / 17 passing**.
+- ESLint: **0 errors, 0 warnings**; typecheck: **0 errors**; Prettier 2.4.1 on changed files: clean; build `--nopackage`: passed with only pre-existing Vite warnings.
+- CP1–CP5 are complete. FTS/scheduled jobs and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction. A PR is created as the final step.
 
 ## Fixes in pass 1
 
@@ -211,12 +221,12 @@ Issue bodies to paste after reconnect:
 5. **P0 developer/release baseline** — copy #1444 / #1515 / #1513, keep #1516 separate; acceptance: documented toolchain, reproducible test/lint/typecheck commands, fork version policy, packaging verification. Type baseline is now clean; release policy and ARM64 packaging remain.
 6. **P1 accounting/inventory** — copy #1538 / #1539 / #1540 / #819 / #842 / #1277 / #1431; each must be reproduced before a fix; confirmed fixes require regression tests.
 
-## Remaining before Phase 1 enhancement
+## Remaining follow-up work
 
 1. Reconnect GitHub with `issues=write` and create the six tracking issues above.
 2. Optional: obtain a real broken company `.db` to confirm #1536 / #1546 / #1351 / #1291 end-to-end. Pass 3 already added synthetic reproduction; this is no longer a hard gate for Phase 1.
 3. Obtain concrete accounting/inventory data to reproduce the P1 list before changing tax or stock logic.
 4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513).
 5. Keep Electron 22 upgrade (#1516) as separate platform hardening.
-6. Scope decisions are confirmed and `PHASE1_DESIGN.md` is written; review it before implementation.
-7. CP1 (`itemWeightDigits` and the shared barcode helper), CP2 (multi-barcode / Item Barcode child table), CP3 (UOM parity), and CP4 (POS stock validator) are implemented and verified above. CP5 (custom-form storage decision) remains, then a PR is created; the user confirmed this order. Work follows the existing native desktop style and minimizes clicks.
+6. Scope decisions are confirmed and `PHASE1_DESIGN.md` records the CP1–CP5 decisions and outcomes.
+7. CP1–CP5 are implemented and verified above. The PR is created as the final step; no FTS/scheduled jobs, real broken-`.db` P0 changes, visual redesign, or extra POS click were included.
