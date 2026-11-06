@@ -49,28 +49,34 @@ All 108 open issues were reviewed by title, labels, body, and comment count. Fea
 
 Implemented after this tracker was created. No upstream GitHub issues were closed. No real broken `.db` reproduction, visual redesign, new sidebar roots, extra POS clicks, FTS/scheduled jobs, Electron upgrade, release tag, or packaged-artifact smoke test was attempted.
 
-| Upstream issue(s)               | Local status                            | Evidence / remaining gate                                                                                                                                                                           |
-| ------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| #1446                           | **Fixed**                               | Existing computed-status filter regression; unchanged from Pass 1.                                                                                                                                  |
-| #1536, #1351, #1291, #1546      | **Synthetic (DatabaseManager)**         | Checkpoint 1 reproduces documented shapes through `DatabaseManager.connectToDatabase()`; real broken `.db` samples are still required before local closure.                                         |
-| #815, #819, #1394, #1410, #1541 | **Code fix (synthetic)**                | Normalized ledger dates and fiscal-year endpoint UTC parts; zero-decimal currency truncation and report export BOM were added. #1394, #1410, and #1541 still need concrete reconciliation fixtures. |
-| #1102, #1413, #1513, #1516      | **Unresolved platform**                 | Needs Linux/ARM64 artifact inspection, native-architecture verification, and a supported Electron upgrade with packaged smoke tests.                                                                |
-| #1538, #842                     | **Code fix (synthetic) / data pending** | Stock-in-hand posting now uses net item amount instead of GST-inclusive grand total; large imported stock-ledger dataset still needed for #842.                                                     |
-| #1539, #1540, #1277, #1431      | **Code fix (synthetic) / data pending** | Multi-reference write-off validation, write-off ledger settlement, and line-discount clamping were fixed; pricing-rule item lookup #1431 still needs a concrete item/rule fixture.                  |
-| #770                            | **Fixed (synthetic)**                   | Zero-decimal currency display precision and tax truncation helper with regression tests.                                                                                                            |
-| #1535                           | **Unresolved**                          | Needs a COA root delete/recreate reproduction; no UI or schema change was made.                                                                                                                     |
-| #1491, #1222                    | **Fixed (synthetic)**                   | Canonical export/import field keys, UTF-8 BOM CSV export, BOM-tolerant parser, and regression tests.                                                                                                |
-| #1390                           | **Fixed**                               | ERPNext sync button no longer reloads/redirects the window; success/error toasts and error logging remain.                                                                                          |
-| #1523                           | **Fixed**                               | Sidebar restore control is visibly rendered and labelled; this is a functional fix, not a visual redesign.                                                                                          |
-| #1444                           | **Fixed**                               | `npm run check:toolchain` validates Node, `yarn.lock`, absence of `package-lock.json`, and pinned module versions.                                                                                  |
-| #1515, #1395, #1551             | **Unresolved release/distribution**     | Fork release policy and RPM/Flatpak scriptlets need packaged artifacts and package-manager verification.                                                                                            |
-| #459, #624, #1470, #1495, #1427 | **Deferred**                            | Translation/regional/UI polish remains with later visual redesign work.                                                                                                                             |
+| Upstream issue(s)               | Local status                            | Evidence / remaining gate                                                                                                                                                                   |
+| ------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #1446                           | **Fixed**                               | Existing computed-status filter regression; unchanged from Pass 1.                                                                                                                          |
+| #1536, #1351, #1291, #1546      | **Synthetic (DatabaseManager)**         | Checkpoint 1 reproduces documented shapes through `DatabaseManager.connectToDatabase()`; real broken `.db` samples are still required before local closure.                                 |
+| #815, #819, #1394, #1410, #1541 | **Code fix (synthetic fixtures)**       | Checkpoint 2 reconciles #1394 export values, #1410 opening balance, and #1541 prior-fiscal-year P&L with labelled synthetic fixtures; real customer/ledger data remains open.               |
+| #1102, #1413, #1513, #1516      | **Unresolved platform**                 | Needs Linux/ARM64 artifact inspection, native-architecture verification, and a supported Electron upgrade with packaged smoke tests.                                                        |
+| #1538, #842                     | **Code fix (synthetic) / data pending** | Stock-in-hand posting now uses net item amount instead of GST-inclusive grand total; large imported stock-ledger dataset still needed for #842.                                             |
+| #1539, #1540, #1277, #1431      | **Code fix (synthetic) / data pending** | Multi-reference write-off validation, write-off ledger settlement, and line-discount clamping were fixed; #1431 has a synthetic item-selection fixture but still needs real item/rule data. |
+| #770                            | **Fixed (synthetic)**                   | Zero-decimal currency display precision and tax truncation helper with regression tests.                                                                                                    |
+| #1535                           | **Unresolved**                          | Needs a COA root delete/recreate reproduction; no UI or schema change was made.                                                                                                             |
+| #1491, #1222                    | **Fixed (synthetic)**                   | Canonical export/import field keys, UTF-8 BOM CSV export, BOM-tolerant parser, and regression tests.                                                                                        |
+| #1390                           | **Fixed**                               | ERPNext sync button no longer reloads/redirects the window; success/error toasts and error logging remain.                                                                                  |
+| #1523                           | **Fixed**                               | Sidebar restore control is visibly rendered and labelled; this is a functional fix, not a visual redesign.                                                                                  |
+| #1444                           | **Fixed**                               | `npm run check:toolchain` validates Node, `yarn.lock`, absence of `package-lock.json`, and pinned module versions.                                                                          |
+| #1515, #1395, #1551             | **Unresolved release/distribution**     | Fork release policy and RPM/Flatpak scriptlets need packaged artifacts and package-manager verification.                                                                                    |
+| #459, #624, #1470, #1495, #1427 | **Deferred**                            | Translation/regional/UI polish remains with later visual redesign work.                                                                                                                     |
 
 ### Later-phase checkpoint 1 (2026-11-07)
 
 `backend/database/tests/testSyntheticIssueStepDatabases.spec.ts` adds four **synthetic issue-step** reproductions through the public `DatabaseManager.connectToDatabase()` path, with 48 targeted assertions. It covers #1351 missing FKs on a copied old DB, #1536 dangling FK fail-loud behaviour, #1291 post-update missing columns, and #1546 `Misc.openCount` in a writable versus non-writable DB directory. Fixtures are generated in temporary directories; no binary `.db` is committed. See `LATER_PHASE_EVIDENCE.md`.
 
 This improves fork-side evidence but **does not close P0-1 or P0-2**. Real broken company DBs and real `foreign_key_check` / file-permission traces remain the gate for end-to-end local closure.
+
+### Later-phase checkpoint 2 (2026-11-07)
+
+`tests/testLaterPhaseReconciliation.spec.ts` adds labelled synthetic fixtures for #1394, #1410, #1541, #842, #1431, and #1535. It covers exported customer balance numeric values, carry-forward ledger opening balance, prior-fiscal-year P&L date ranges and totals, finite stock valuation, pricing-rule item candidates, and root-account recreation constraints. See `LATER_PHASE_EVIDENCE.md`.
+
+These fixtures support local code hardening, but real customer CSVs, a prior-fiscal-year company DB, a large imported stock ledger, concrete pricing-rule data, and a COA delete/recreate trace remain required before end-to-end local closure.
 
 ---
 
@@ -101,8 +107,8 @@ This improves fork-side evidence but **does not close P0-1 or P0-2**. Real broke
 
 **Upstream:** [#815](https://github.com/frappe/books/issues/815), [#819](https://github.com/frappe/books/issues/819), [#1541](https://github.com/frappe/books/issues/1541), [#1394](https://github.com/frappe/books/issues/1394), [#1410](https://github.com/frappe/books/issues/1410)
 **Why critical:** Trial Balance, Balance Sheet, Profit & Loss, customer balances, and ledger opening balances are accounting-correctness surfaces. Wrong reports can hide real ledger errors.
-**Fork status:** **Partial / Triage.** Pass 2 fixed an impossible P&L root guard and an expense-only total label, with `reports/ProfitAndLoss/tests/testProfitAndLoss.spec.ts`, but #819 date bucketing, #815 incorrect Trial Balance / Balance Sheet data, #1541 prior-fiscal-year P&L showing no values, #1394 exported customer balances, and #1410 opening balance carry-forward are not reproduced or fixed.
-**Next action:** build one representative ledger fixture with prior-year income, current-year expenses, journal entries, customer balances, and date-range filters; compare General Ledger, Trial Balance, Balance Sheet, P&L, and CSV export; then add regression tests before changing report logic.
+**Fork status:** **Code fix (synthetic fixtures).** Pass 2 and Pass 4 added P&L, date, currency, and export hardening. Checkpoint 2 adds synthetic reconciliations for #1394, #1410, and #1541 and an automatic carry-forward opening balance row in the General Ledger; #815 and #819 still need real report data.
+**Next action:** obtain real customer/ledger exports and compare General Ledger, Trial Balance, Balance Sheet, P&L, and CSV export end-to-end; the synthetic checkpoint-2 fixtures are not a substitute for that data.
 
 ### P0-5. Release/runtime platform blockers
 
@@ -119,7 +125,7 @@ This improves fork-side evidence but **does not close P0-1 or P0-2**. Real broke
 
 **Upstream:** [#1538](https://github.com/frappe/books/issues/1538), [#842](https://github.com/frappe/books/issues/842)
 **Why critical:** stock-in-hand value includes GST for purchase receipts, and Stock Ledger / Stock Balance may fail to load on large imported datasets.
-**Fork status:** **Triage.** CP4 centralized POS stock quantity validation but did not reproduce GST valuation or ledger rendering failures.
+**Fork status:** **Code fix (synthetic).** CP4 centralized POS stock quantity validation; checkpoint 2 added a finite stock valuation guard and a synthetic Stock Balance fixture. The large imported dataset from #842 is still needed.
 **Next action:** reproduce with a GST-enabled purchase receipt and a large imported stock-ledger dataset; inspect `StockLedgerEntry`, valuation method, batch rows, and report query limits. Add regression tests before changing valuation or report logic.
 
 ### P1-2. Payment, discount and pricing-rule correctness
@@ -140,7 +146,7 @@ This improves fork-side evidence but **does not close P0-1 or P0-2**. Real broke
 
 **Upstream:** [#1535](https://github.com/frappe/books/issues/1535)
 **Why critical:** users cannot recreate or rebuild root groups after deleting the chart of accounts structure.
-**Fork status:** **Triage.** No reproduction or root-account constraint test exists.
+**Fork status:** **Synthetic fixture.** Root-group recreation is now allowed after setup while child accounts still require a parent; a real delete/recreate trace remains open.
 **Next action:** reproduce delete/recreate root group, inspect FK constraints and COA defaults, then add a regression test.
 
 ### P1-5. Import/export round-trip and CSV encoding
@@ -216,7 +222,7 @@ An upstream issue can be marked locally **closed** only when all of the followin
 ## Sequencing after this register
 
 1. Pass 4 code-level P0–P2 fixes are recorded above; synthetic verification is complete.
-2. Checkpoint 1 recorded labelled synthetic `DatabaseManager` reproductions for P0-1 / P0-2; real broken-`.db` samples and data-dependent reconciliation inputs remain open gates.
+2. Checkpoint 1 recorded labelled synthetic `DatabaseManager` reproductions for P0-1 / P0-2, and checkpoint 2 recorded labelled synthetic reconciliation fixtures. Real broken-`.db` samples and customer/COA/pricing/stock-ledger data remain open gates.
 3. Close the remaining platform/release issues only with packaged-artifact smoke tests.
 4. Re-run the full verification gates after each remaining fix.
 5. Only then revisit visual redesign, new sidebar roots, and extra POS clicks.

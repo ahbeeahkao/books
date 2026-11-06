@@ -56,10 +56,10 @@
 
 ## Checkpoint progress
 
-| Checkpoint | Status                                     | Evidence                                                                                   |
-| ---------- | ------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| 1          | **Synthetic issue-step reproduction done** | `LATER_PHASE_EVIDENCE.md`; 48/48 targeted assertions; real broken-`.db` gate remains open. |
-| 2          | Pending                                    | Deterministic reconciliation fixtures are next.                                            |
-| 3          | Pending                                    | Latest-stable Electron, architecture checks, Linux sandbox guidance, and CI gates.         |
-| 4          | Pending                                    | Version/tag/release policy, RPM scriptlet guard, Flatpak/Flathub boundary.                 |
-| 5          | Pending                                    | Minimal native-desktop UX, functional roots, and no extra core POS confirmation clicks.    |
+| Checkpoint | Status                                     | Evidence                                                                                     |
+| ---------- | ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| 1          | **Synthetic issue-step reproduction done** | `LATER_PHASE_EVIDENCE.md`; 48/48 targeted assertions; real broken-`.db` gate remains open.   |
+| 2          | **Synthetic reconciliation fixtures done** | `LATER_PHASE_EVIDENCE.md`; 29/29 targeted assertions; real reconciliation data remains open. |
+| 3          | Pending                                    | Latest-stable Electron, architecture checks, Linux sandbox guidance, and CI gates.           |
+| 4          | Pending                                    | Version/tag/release policy, RPM scriptlet guard, Flatpak/Flathub boundary.                   |
+| 5          | Pending                                    | Minimal native-desktop UX, functional roots, and no extra core POS confirmation clicks.      |

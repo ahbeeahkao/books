@@ -1,8 +1,8 @@
 # Stabilization passes 1–3
 
-**Date:** 2026-11-04  
-**Branch:** `arena/a27de3bc-books`  
-**Original baseline:** `stabilization-baseline` at `8a4ae666b7805c641d66af53feeab16e00d23c9a`  
+**Date:** 2026-11-04
+**Branch:** `arena/a27de3bc-books`
+**Original baseline:** `stabilization-baseline` at `8a4ae666b7805c641d66af53feeab16e00d23c9a`
 **Checkpoint tags:** `stabilization-pass-1` (`69d9616`), `stabilization-pass-2` (`55b88df`), `stabilization-pass-3` (this pass)
 
 This is the pre-enhancement stabilization checkpoint for the archived Electron/Vue/SQLite Books fork. It is intentionally **not** a claim that every upstream P0/P1 issue is closed: only reproducible/code-confirmed blockers were fixed in these passes. Pass 3 adds synthetic broken-DB reproduction, which is **not** a real user `.db`. The Phase 1 design/impact note lives in `PHASE1_DESIGN.md`; the detailed upstream critical-issue backlog now lives in `UPSTREAM_CRITICAL_ISSUES.md`. FTS search index and scheduled jobs remain out of the enhancement scope, and no UI redesign was introduced.
@@ -273,3 +273,16 @@ After PR #2 opened, the authorized later phase started with synthetic issue-step
 - Healthy cases assert `AccountingSettings.companyName`, no `Company` DocType, FK enforcement, `foreign_key_check`, `integrity_check`, and temp-table cleanup.
 
 Targeted result: **48 / 48 assertions passing**; `vue-tsc --noEmit --pretty false` is clean. Evidence and limitations are in `LATER_PHASE_EVIDENCE.md`. No binary `.db` is committed. These are not real user samples; no upstream issue is closed, and the real broken-`.db` gate remains open.
+
+## Later phase — checkpoint 2 (2026-11-07)
+
+Synthetic reconciliation fixtures were added for #1394, #1410, #1541, #842, #1431, and #1535. `src/utils/reconciliation.ts` contains deterministic ledger reconciliation, group opening balances, pricing-rule item candidates, and root-account recreation validation helpers. `src/utils/stabilization.ts` adds a finite-number guard.
+
+- #1394: report CSV/JSON export now reads Money-like `float` values and bounds non-finite numbers.
+- #1410: General Ledger now carries forward pre-range entries as an `Opening` row and uses them in running and closing balances. Grouped reports receive group-specific opening balances.
+- #1541: prior-fiscal-year date range and P&L total are reconciled against a `₹50,000` back-dated income fixture.
+- #842: `StockQueue` and Stock Balance helpers reject/bound `NaN` and `±Infinity`; this is a display guard, not a rewrite of underlying stock data.
+- #1431: a synthetic item/rule candidate list selects only the eligible sales item and never falls back to a wrong item.
+- #1535: an explicit root group can be recreated after setup while ordinary child accounts still require a parent.
+
+Targeted result: **29 / 29 assertions passing**. Full tape suite: **1317 / 1317 passing** across **35 spec files**. Typecheck, ESLint, Prettier, toolchain preflight, build, and diff check are clean. Evidence and limitations are in `LATER_PHASE_EVIDENCE.md`. Real customer CSVs, prior-year company DBs, large stock ledgers, pricing-rule data, and COA traces remain open gates.

@@ -12,6 +12,10 @@ export function withExcelBom(csv: string): string {
   return UTF8_BOM + stripUtf8Bom(csv);
 }
 
+export function sanitizeFiniteNumber(value: number, fallback = 0): number {
+  return Number.isFinite(value) ? value : fallback;
+}
+
 export function getCurrencyFractionDigits(currency: string): number {
   try {
     const options = new Intl.NumberFormat('en', {
