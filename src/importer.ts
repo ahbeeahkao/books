@@ -13,6 +13,10 @@ import {
   Schema,
   TargetField,
 } from 'schemas/types';
+import {
+  getCanonicalImportFieldKey,
+  withExcelBom,
+} from './utils/stabilization';
 import { generateCSV, parseCSV } from 'utils/csvParser';
 import { getValueMapFromList } from 'utils/index';
 
@@ -556,7 +560,7 @@ export class Importer {
       fieldKey.push(field.fieldKey);
     }
 
-    return generateCSV([schemaLabels, fieldLabels, fieldKey]);
+    return withExcelBom(generateCSV([schemaLabels, fieldLabels, fieldKey]));
   }
 }
 
@@ -623,7 +627,7 @@ function getTemplateFields(
 
       const schemaName = schema.name;
       const schemaLabel = schema.label;
-      const fieldKey = `${schema.name}.${field.fieldname}`;
+      const fieldKey = getCanonicalImportFieldKey(schema.name, field.fieldname);
 
       fields.push({
         ...tf,

@@ -15,6 +15,7 @@
     "script:translate": "scripts/runner.sh scripts/generateTranslations.ts",
     "script:profile": "scripts/profile.sh",
     "test": "scripts/test.sh",
+    "check:toolchain": "node scripts/checkToolchain.mjs",
     "uitest": "node uitest/index.mjs | tap-spec",
     "lint": "eslint . --ext ts,vue",
     "format": "prettier --write ."

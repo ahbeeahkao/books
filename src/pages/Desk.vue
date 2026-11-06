@@ -68,9 +68,12 @@ import { toggleSidebar } from 'src/utils/ui';
         rtl-rotate-180
         p-1
         m-4
-        opacity-0
+        opacity-60
         hover:opacity-100 hover:shadow-md
+        focus:opacity-100 focus:outline-none
       "
+      :aria-label="t`Show Sidebar`"
+      :title="t`Show Sidebar`"
       @click="() => toggleSidebar()"
     >
       <feather-icon name="chevrons-right" class="w-4 h-4" />

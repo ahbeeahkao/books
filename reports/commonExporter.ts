@@ -3,6 +3,7 @@ import { Action } from 'fyo/model/types';
 import { Verb } from 'fyo/telemetry/types';
 import { getSavePath, showExportInFolder } from 'src/utils/ui';
 import { getIsNullOrUndef } from 'utils';
+import { withExcelBom } from '../src/utils/stabilization';
 import { generateCSV } from 'utils/csvParser';
 import { Report } from './Report';
 import { ExportExtention, ReportCell } from './types';
@@ -130,7 +131,7 @@ function getJsonData(report: Report): string {
 
 export function getCsvData(report: Report): string {
   const csvMatrix = convertReportToCSVMatrix(report);
-  return generateCSV(csvMatrix);
+  return withExcelBom(generateCSV(csvMatrix));
 }
 
 function convertReportToCSVMatrix(report: Report): unknown[][] {

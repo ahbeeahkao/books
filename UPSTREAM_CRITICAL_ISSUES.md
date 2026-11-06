@@ -45,6 +45,27 @@ All 108 open issues were reviewed by title, labels, body, and comment count. Fea
 - **Platform:** packaging/runtime work; separate from app-schema logic.
 - **Deferred:** feature, visual redesign, or enhancement work to revisit after stabilization.
 
+## Pass 4 local status (2026-11-06)
+
+Implemented after this tracker was created. No upstream GitHub issues were closed. No real broken `.db` reproduction, visual redesign, new sidebar roots, extra POS clicks, FTS/scheduled jobs, Electron upgrade, release tag, or packaged-artifact smoke test was attempted.
+
+| Upstream issue(s)               | Local status                            | Evidence / remaining gate                                                                                                                                                                           |
+| ------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #1446                           | **Fixed**                               | Existing computed-status filter regression; unchanged from Pass 1.                                                                                                                                  |
+| #1536, #1351, #1291, #1546      | **Synthetic**                           | Existing FK/migration and `SingleValue` fixes; real broken `.db` reproductions are still required before local closure.                                                                             |
+| #815, #819, #1394, #1410, #1541 | **Code fix (synthetic)**                | Normalized ledger dates and fiscal-year endpoint UTC parts; zero-decimal currency truncation and report export BOM were added. #1394, #1410, and #1541 still need concrete reconciliation fixtures. |
+| #1102, #1413, #1513, #1516      | **Unresolved platform**                 | Needs Linux/ARM64 artifact inspection, native-architecture verification, and a supported Electron upgrade with packaged smoke tests.                                                                |
+| #1538, #842                     | **Code fix (synthetic) / data pending** | Stock-in-hand posting now uses net item amount instead of GST-inclusive grand total; large imported stock-ledger dataset still needed for #842.                                                     |
+| #1539, #1540, #1277, #1431      | **Code fix (synthetic) / data pending** | Multi-reference write-off validation, write-off ledger settlement, and line-discount clamping were fixed; pricing-rule item lookup #1431 still needs a concrete item/rule fixture.                  |
+| #770                            | **Fixed (synthetic)**                   | Zero-decimal currency display precision and tax truncation helper with regression tests.                                                                                                            |
+| #1535                           | **Unresolved**                          | Needs a COA root delete/recreate reproduction; no UI or schema change was made.                                                                                                                     |
+| #1491, #1222                    | **Fixed (synthetic)**                   | Canonical export/import field keys, UTF-8 BOM CSV export, BOM-tolerant parser, and regression tests.                                                                                                |
+| #1390                           | **Fixed**                               | ERPNext sync button no longer reloads/redirects the window; success/error toasts and error logging remain.                                                                                          |
+| #1523                           | **Fixed**                               | Sidebar restore control is visibly rendered and labelled; this is a functional fix, not a visual redesign.                                                                                          |
+| #1444                           | **Fixed**                               | `npm run check:toolchain` validates Node, `yarn.lock`, absence of `package-lock.json`, and pinned module versions.                                                                                  |
+| #1515, #1395, #1551             | **Unresolved release/distribution**     | Fork release policy and RPM/Flatpak scriptlets need packaged artifacts and package-manager verification.                                                                                            |
+| #459, #624, #1470, #1495, #1427 | **Deferred**                            | Translation/regional/UI polish remains with later visual redesign work.                                                                                                                             |
+
 ---
 
 ## P0 — must verify or fix before new features
@@ -188,7 +209,8 @@ An upstream issue can be marked locally **closed** only when all of the followin
 
 ## Sequencing after this register
 
-1. Approve/prioritize P0 items, starting with real broken-`.db` reproductions for P0-1 / P0-2.
-2. Reproduce and fix P1 accounting/inventory/transaction issues with regression tests.
-3. Re-run the full verification gates.
-4. Only then revisit visual redesign, new sidebar roots, and extra POS clicks.
+1. Pass 4 code-level P0–P2 fixes are recorded above; synthetic verification is complete.
+2. Next, do the real broken-`.db` reproductions for P0-1 / P0-2 and reconcile the data-dependent report/payment issues.
+3. Close the remaining platform/release issues only with packaged-artifact smoke tests.
+4. Re-run the full verification gates after each remaining fix.
+5. Only then revisit visual redesign, new sidebar roots, and extra POS clicks.

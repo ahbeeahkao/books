@@ -230,3 +230,32 @@ Issue bodies to paste after reconnect:
 5. Keep Electron 22 upgrade (#1516) as separate platform hardening.
 6. Scope decisions are confirmed and `PHASE1_DESIGN.md` records the CP1–CP5 decisions and outcomes.
 7. CP1–CP5 are implemented and verified above, and PR #1 is merged as `f7b0f81`. Before new features, close the P0/P1 items in `UPSTREAM_CRITICAL_ISSUES.md`; no FTS/scheduled jobs, visual redesign, or extra POS click were included in the merged work.
+
+## Pass 4 — critical upstream parity fixes (2026-11-06)
+
+Before the later real broken-`.db`, visual redesign, new sidebar roots, and extra POS-click phases, the code-resolvable P0–P2 items from `UPSTREAM_CRITICAL_ISSUES.md` were stabilized locally:
+
+- Added `src/utils/stabilization.ts` with UTF-8 BOM helpers, canonical export/import field keys, currency fraction/precision helpers, zero-decimal truncation, line-discount clamping, write-off ledger amounts, local-midnight date normalization, and UTC-safe fiscal date parts.
+- CSV export now emits an Excel-compatible UTF-8 BOM; `parseCSV()` strips BOMs; import/export use the same `Schema.fieldname` key format.
+- `Fyo#initializeMoneyMaker()` clamps display precision to the currency's minor-unit digits; invoice tax amounts are truncated for zero-decimal currencies.
+- Line-item discounts are absolute amounts clamped to the line amount, not per-unit multipliers that can create negative totals.
+- Payment write-off postings now settle the full receivable/payable and put the write-off on the correct debit/credit side; multi-reference validation no longer coerces an unset write-off to `0`.
+- Purchase Receipt stock-in-hand posting uses net item amount, excluding GST from inventory valuation.
+- Ledger posting dates are normalized to local midnight without timezone day drift; fiscal-year endpoints use stored UTC date parts.
+- ERPNext sync actions no longer call `ipc.reloadWindow()`; they surface success/error toasts and log failures.
+- The sidebar restore control is visible and labelled; the hide control is labelled too. This is a functional fix, not a redesign.
+- Added `scripts/checkToolchain.mjs` and `npm run check:toolchain` to fail clearly on unsupported Node, missing `yarn.lock`, a stray `package-lock.json`, or drifted pinned module versions.
+- Added `tests/testStabilizationPass4.spec.ts` with 30 assertions.
+
+Verification:
+
+- Targeted stabilization test: **30 / 30 passing**.
+- Full tape suite including the new spec: **1240 / 1240 passing** across **33 spec files**.
+- `vue-tsc --noEmit --pretty false`: **0 errors**.
+- `eslint . --ext ts,vue`: **0 errors, 0 warnings**.
+- `prettier --check` on changed files: clean.
+- `npm run check:toolchain`: passed.
+- `node build/scripts/build.mjs --nopackage`: exit 0 with the same pre-existing Vite dynamic-import/chunk-size warnings.
+- `git diff --check`: clean.
+
+Unresolved by design: real broken `.db` files, packaged Linux/ARM64 smoke tests, Electron 22 upgrade, release tags, RPM/Flatpak scriptlets, concrete customer-balance/COA/pricing-rule fixtures, and any visual redesign/new sidebar roots/extra POS clicks. These remain in `UPSTREAM_CRITICAL_ISSUES.md` with explicit gates.

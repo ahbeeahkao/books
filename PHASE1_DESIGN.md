@@ -3,7 +3,7 @@
 **Date:** 2026-11-04  
 **Branch:** `arena/a27de3bc-books` (active)  
 **Baseline:** `0a4be28` / `stabilization-pass-3`  
-**Status:** CP1–CP5 merged; upstream stabilization backlog tracked before new features
+**Status:** CP1–CP5 merged; code-resolvable P0–P2 upstream parity fixes verified before new features
 
 This note converted the confirmed roadmap decisions into a concrete implementation plan for the archived Electron/Vue/SQLite Books fork and now records the CP1–CP5 outcomes.
 
