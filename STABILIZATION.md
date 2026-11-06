@@ -5,7 +5,7 @@
 **Original baseline:** `stabilization-baseline` at `8a4ae666b7805c641d66af53feeab16e00d23c9a`  
 **Checkpoint tags:** `stabilization-pass-1` (`69d9616`), `stabilization-pass-2` (`55b88df`), `stabilization-pass-3` (this pass)
 
-This is the pre-enhancement stabilization checkpoint for the archived Electron/Vue/SQLite Books fork. It is intentionally **not** a claim that every upstream P0/P1 issue is closed: only reproducible/code-confirmed blockers were fixed in these passes. Pass 3 adds synthetic broken-DB reproduction, which is **not** a real user `.db`. The Phase 1 design/impact note now lives in `PHASE1_DESIGN.md`; it is a design document only and no Phase 1 schema code has been written. FTS search index and scheduled jobs remain out of the enhancement scope, and no UI redesign was introduced.
+This is the pre-enhancement stabilization checkpoint for the archived Electron/Vue/SQLite Books fork. It is intentionally **not** a claim that every upstream P0/P1 issue is closed: only reproducible/code-confirmed blockers were fixed in these passes. Pass 3 adds synthetic broken-DB reproduction, which is **not** a real user `.db`. The Phase 1 design/impact note lives in `PHASE1_DESIGN.md`; the detailed upstream critical-issue backlog now lives in `UPSTREAM_CRITICAL_ISSUES.md`. FTS search index and scheduled jobs remain out of the enhancement scope, and no UI redesign was introduced.
 
 ## Scope decisions
 
@@ -201,7 +201,7 @@ Issues are enabled on `ahbeeahkao/books`. Labels `P0`, `P1`, `upstream`, `stabil
 X-Accepted-Github-Permissions: issues=write
 ```
 
-`gh issue list --repo ahbeeahkao/books --state all` remains `[]`. Reconnect GitHub in Arena or grant Issues write permission, then create the following six tracking issues.
+`gh issue list --repo ahbeeahkao/books --state all` remains `[]`. Until `issues=write` is available, use `UPSTREAM_CRITICAL_ISSUES.md` as the detailed local tracker for critical upstream parity work. Reconnect GitHub in Arena or grant Issues write permission, then create the following six tracking issues.
 
 | Title                                                                | Labels                                   | Upstream references                           | Status                                                                            |
 | -------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -223,10 +223,10 @@ Issue bodies to paste after reconnect:
 
 ## Remaining follow-up work
 
-1. Reconnect GitHub with `issues=write` and create the six tracking issues above.
+1. GitHub issue creation is still blocked by missing `issues=write`; track critical upstream parity work in `UPSTREAM_CRITICAL_ISSUES.md` and create the six tracking issues when permissions allow.
 2. Optional: obtain a real broken company `.db` to confirm #1536 / #1546 / #1351 / #1291 end-to-end. Pass 3 already added synthetic reproduction; this is no longer a hard gate for Phase 1.
 3. Obtain concrete accounting/inventory data to reproduce the P1 list before changing tax or stock logic.
 4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513).
 5. Keep Electron 22 upgrade (#1516) as separate platform hardening.
 6. Scope decisions are confirmed and `PHASE1_DESIGN.md` records the CP1–CP5 decisions and outcomes.
-7. CP1–CP5 are implemented and verified above. The PR is created as the final step; no FTS/scheduled jobs, real broken-`.db` P0 changes, visual redesign, or extra POS click were included.
+7. CP1–CP5 are implemented and verified above, and PR #1 is merged as `f7b0f81`. Before new features, close the P0/P1 items in `UPSTREAM_CRITICAL_ISSUES.md`; no FTS/scheduled jobs, visual redesign, or extra POS click were included in the merged work.
