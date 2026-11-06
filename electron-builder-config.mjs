@@ -26,6 +26,8 @@ const frappeBooksConfig = {
   ],
   files: '**',
   extends: null,
+  npmRebuild: true,
+  buildDependenciesFromSource: true,
   directories: {
     output: packageDirPath,
     app: buildDirPath,
@@ -82,7 +84,7 @@ const frappeBooksConfig = {
       },
       {
         target: 'AppImage',
-        arch: ['x64'],
+        arch: ['x64', 'arm64'],
       },
       {
         target: 'rpm',

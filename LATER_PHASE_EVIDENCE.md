@@ -63,6 +63,31 @@ Limitations:
 - #1410 now implements automatic carry-forward opening balance; it queries all non-reverted ledger entries through `toDate`, so performance on very large company DBs still needs a real dataset check.
 - No upstream issue is marked locally closed from these synthetic fixtures.
 
-## Checkpoints 3–5
+## Checkpoint 3 — Electron/platform gates
+
+**Status:** source, scripts, and CI configuration implemented; **real packaged Linux x64/ARM64 smoke tests are not available in this sandbox**.
+
+- `package.json` now pins Electron `45.2.3`, `electron-builder` `26.18.0`, `@electron/rebuild` `4.2.1`, `electron-updater` `6.8.11`, and `node-abi` `^4.40.0`. Direct `yarn.lock` entries were appended from npm registry metadata.
+- `scripts/checkToolchain.mjs` now requires Node `22.12+` and verifies the exact Electron/platform package versions. All active GitHub workflows use Node `22.14.0`.
+- `package.json` exposes `yarn rebuild:native`, `yarn check:native-arch`, and `yarn check:platform`. `scripts/checkPlatformPolicy.mjs` verifies the pinned versions, Linux x64/ARM64 targets, Linux sandbox guard, lock entries, and workflow node versions.
+- `electron-builder-config.mjs` now enables native rebuilds and includes `arm64` for `deb`, `rpm`, and `AppImage`; previously AppImage was x64-only.
+- `scripts/checkNativeArchitecture.mjs` scans an unpacked app directory and fails if any `.node` file is not an ELF binary for the requested x64/arm64 target. `tests/testPlatformArchitecture.spec.ts` covers matching and mismatching synthetic ELF headers, missing modules, non-ELF files, the Linux sandbox opt-in, and the static policy gate.
+- `src/utils/platform.ts` and `main.ts` keep the Chromium sandbox off-limits by default and allow an explicit Linux-only `BOOKS_DISABLE_CHROMIUM_SANDBOX=1` diagnostic fallback. `LINUX_SANDBOX.md` documents the security trade-off and preferred system fixes.
+- `.github/workflows/platform.yml` is a manual native-runner gate for x64 and ARM64. It packages the app, checks unpacked native-module architecture, and launches the binary under Xvfb. `build.yml`, `lint.yml`, and `test.yml` also run toolchain/platform preflight on pull requests.
+
+Verification:
+
+- Targeted platform spec: **11 / 11 passing**.
+- Full tape suite at checkpoint 3: **1328 / 1328 passing** across **36 spec files**.
+- `vue-tsc --noEmit --pretty false`, `eslint . --ext ts,vue`, Prettier check, `yarn check:toolchain`, `yarn check:platform`, `node build/scripts/build.mjs --nopackage`, and `git diff --check`: all green.
+
+Limitations:
+
+- This sandbox cannot download/run Electron desktop binaries for Linux x64 or ARM64, so the manual packaged-architecture workflow and Xvfb launch step were **not executed here**.
+- `npm rebuild better-sqlite3 --build-from-source` restored the host test toolchain, but it is not an Electron-ABI rebuild inside a packaged artifact. `yarn rebuild:native` on a native CI runner remains the packaged rebuild gate.
+- Yarn's registry fetch endpoint was not usable from this sandbox. Direct lock entries were added, but a full transitive `yarn.lock` regeneration should be performed by a network-enabled CI runner.
+- No upstream issue is marked locally closed without the packaged launch and native-architecture smoke-test outputs.
+
+## Checkpoints 4–5
 
 Pending in sequential order.

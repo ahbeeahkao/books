@@ -226,8 +226,8 @@ Issue bodies to paste after reconnect:
 1. GitHub issue creation is still blocked by missing `issues=write`; track critical upstream parity work in `UPSTREAM_CRITICAL_ISSUES.md` and create the six tracking issues when permissions allow.
 2. Optional: obtain a real broken company `.db` to confirm #1536 / #1546 / #1351 / #1291 end-to-end. Pass 3 already added synthetic reproduction; this is no longer a hard gate for Phase 1.
 3. Obtain concrete accounting/inventory data to reproduce the P1 list before changing tax or stock logic.
-4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513).
-5. Keep Electron 22 upgrade (#1516) as separate platform hardening.
+4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513) with the checkpoint-3 manual CI gate.
+5. Checkpoint 3 upgraded Electron to `45.2.3`; packaged Linux/ARM64 launch outputs remain the gate for #1516.
 6. Scope decisions are confirmed and `PHASE1_DESIGN.md` records the CP1–CP5 decisions and outcomes.
 7. CP1–CP5 are implemented and verified above, and PR #1 is merged as `f7b0f81`. Before new features, close the P0/P1 items in `UPSTREAM_CRITICAL_ISSUES.md`; no FTS/scheduled jobs, visual redesign, or extra POS click were included in the merged work.
 
@@ -258,7 +258,7 @@ Verification:
 - `node build/scripts/build.mjs --nopackage`: exit 0 with the same pre-existing Vite dynamic-import/chunk-size warnings.
 - `git diff --check`: clean.
 
-Unresolved by design: real broken `.db` files, packaged Linux/ARM64 smoke tests, Electron 22 upgrade, release tags, RPM/Flatpak scriptlets, concrete customer-balance/COA/pricing-rule fixtures, and any visual redesign/new sidebar roots/extra POS clicks. These remain in `UPSTREAM_CRITICAL_ISSUES.md` with explicit gates.
+Unresolved by design: real broken `.db` files, packaged Linux/ARM64 smoke-test outputs, release tags, RPM/Flatpak scriptlets, concrete customer-balance/COA/pricing-rule fixtures, and any visual redesign/new sidebar roots/extra POS clicks. These remain in `UPSTREAM_CRITICAL_ISSUES.md` with explicit gates.
 
 ## Later phase — checkpoint 1 (2026-11-07)
 
@@ -286,3 +286,11 @@ Synthetic reconciliation fixtures were added for #1394, #1410, #1541, #842, #143
 - #1535: an explicit root group can be recreated after setup while ordinary child accounts still require a parent.
 
 Targeted result: **29 / 29 assertions passing**. Full tape suite: **1317 / 1317 passing** across **35 spec files**. Typecheck, ESLint, Prettier, toolchain preflight, build, and diff check are clean. Evidence and limitations are in `LATER_PHASE_EVIDENCE.md`. Real customer CSVs, prior-year company DBs, large stock ledgers, pricing-rule data, and COA traces remain open gates.
+
+## Later phase — checkpoint 3 (2026-11-07)
+
+Platform dependencies were upgraded to Electron `45.2.3`, electron-builder `26.18.0`, `@electron/rebuild` `4.2.1`, and electron-updater `6.8.11`. Node `22.12+` is now required and active workflows use `22.14.0`. The Linux AppImage target now includes ARM64, native rebuilds are enabled, and a manual native-runner CI workflow packages x64/ARM64 artifacts, checks unpacked ELF `.node` architecture, and launches under Xvfb.
+
+`scripts/checkNativeArchitecture.mjs` and `scripts/checkPlatformPolicy.mjs` are new static/runtime gates. `LINUX_SANDBOX.md` documents Ubuntu 24.04 user-namespace fixes and a Linux-only `BOOKS_DISABLE_CHROMIUM_SANDBOX` fallback; the main process keeps the Chromium sandbox enabled by default.
+
+Targeted result: **11 / 11 assertions passing**. Full tape suite: **1328 / 1328 passing** across **36 spec files**. Typecheck, ESLint, Prettier, toolchain/platform preflight, source build, and diff check are clean. No packaged Electron app was launched in this sandbox; the manual CI gate remains unexecuted and no upstream platform issue is closed.

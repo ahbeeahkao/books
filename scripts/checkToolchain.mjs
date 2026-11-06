@@ -1,9 +1,10 @@
-import { createRequire } from 'module';
-import { existsSync } from 'fs';
-
-const rootRequire = createRequire(new URL('../package.json', import.meta.url));
+import { existsSync, readFileSync } from 'fs';
 
 const expected = {
+  electron: '45.2.3',
+  'electron-builder': '26.18.0',
+  '@electron/rebuild': '4.2.1',
+  'electron-updater': '6.8.11',
   vue: '3.2.40',
   '@vue/compiler-sfc': '3.2.40',
   typescript: '4.6.2',
@@ -17,9 +18,13 @@ const expected = {
 };
 
 const failures = [];
-const nodeMajor = Number(process.versions.node.split('.')[0]);
-if (nodeMajor < 20) {
-  failures.push(`Node ${process.versions.node} is unsupported; use Node 20+`);
+const [nodeMajor, nodeMinor] = process.versions.node
+  .split('.')
+  .map((part) => Number(part));
+if (nodeMajor < 22 || (nodeMajor === 22 && nodeMinor < 12)) {
+  failures.push(
+    `Node ${process.versions.node} is unsupported; Electron 45 requires Node 22.12+`
+  );
 }
 
 if (!existsSync(new URL('../yarn.lock', import.meta.url))) {
@@ -31,8 +36,16 @@ if (existsSync(new URL('../package-lock.json', import.meta.url))) {
 }
 
 function packageVersion(name) {
+  const packageJsonPath = new URL(
+    `../node_modules/${name}/package.json`,
+    import.meta.url
+  );
+  if (!existsSync(packageJsonPath)) {
+    return null;
+  }
+
   try {
-    return rootRequire(`${name}/package.json`).version;
+    return JSON.parse(readFileSync(packageJsonPath, 'utf8')).version ?? null;
   } catch {
     return null;
   }

@@ -1,0 +1,78 @@
+name: Platform Architecture Gate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  linux-package:
+    name: Linux ${{ matrix.arch }} package
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            flag: --x64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            flag: --arm64
+    steps:
+      - name: Checkout Books
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.14.0'
+
+      - name: Set yarn version
+        run: yarn set version 1.22.18
+
+      - name: Install dependencies
+        run: yarn
+
+      - name: Toolchain preflight
+        run: yarn check:toolchain
+
+      - name: Platform policy preflight
+        run: yarn check:platform
+
+      - name: Package Linux ${{ matrix.arch }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          APPLE_NOTARIZE: 0
+        run: yarn build --linux ${{ matrix.flag }} --publish never
+
+      - name: Verify unpacked native module architecture
+        run: |
+          unpacked="$(find dist_electron/bundled -type d -path '*linux*-unpacked/resources/app.asar.unpacked' | head -n 1)"
+          test -n "$unpacked"
+          node scripts/checkNativeArchitecture.mjs --arch ${{ matrix.arch }} --dir "$unpacked"
+
+      - name: Install virtual display for launch smoke test
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      - name: Launch packaged app under Xvfb
+        run: |
+          executable="$(find dist_electron/bundled -maxdepth 2 -type f -perm -u+x -not -name '*.so*' -not -path '*/resources/*' | head -n 1)"
+          test -n "$executable"
+          set +e
+          timeout 15s xvfb-run --auto-servernum env BOOKS_DISABLE_CHROMIUM_SANDBOX=1 "$executable" > packaged-launch.log 2>&1
+          status=$?
+          set -e
+          cat packaged-launch.log
+          if [ "$status" -eq 124 ]; then
+            echo "Packaged app stayed alive through the smoke-test window."
+          else
+            echo "Packaged app exited with status $status."
+            exit "$status"
+          fi
+
+      - name: Upload launch log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-launch-${{ matrix.arch }}
+          path: packaged-launch.log
+          if-no-files-found: ignore

@@ -54,7 +54,7 @@ Implemented after this tracker was created. No upstream GitHub issues were close
 | #1446                           | **Fixed**                               | Existing computed-status filter regression; unchanged from Pass 1.                                                                                                                          |
 | #1536, #1351, #1291, #1546      | **Synthetic (DatabaseManager)**         | Checkpoint 1 reproduces documented shapes through `DatabaseManager.connectToDatabase()`; real broken `.db` samples are still required before local closure.                                 |
 | #815, #819, #1394, #1410, #1541 | **Code fix (synthetic fixtures)**       | Checkpoint 2 reconciles #1394 export values, #1410 opening balance, and #1541 prior-fiscal-year P&L with labelled synthetic fixtures; real customer/ledger data remains open.               |
-| #1102, #1413, #1513, #1516      | **Unresolved platform**                 | Needs Linux/ARM64 artifact inspection, native-architecture verification, and a supported Electron upgrade with packaged smoke tests.                                                        |
+| #1102, #1413, #1513, #1516      | **Platform gate (synthetic)**           | Electron 45.2.3, native-architecture checks, Linux sandbox guidance, and manual CI smoke-test workflow added; real packaged launch outputs remain open.                                     |
 | #1538, #842                     | **Code fix (synthetic) / data pending** | Stock-in-hand posting now uses net item amount instead of GST-inclusive grand total; large imported stock-ledger dataset still needed for #842.                                             |
 | #1539, #1540, #1277, #1431      | **Code fix (synthetic) / data pending** | Multi-reference write-off validation, write-off ledger settlement, and line-discount clamping were fixed; #1431 has a synthetic item-selection fixture but still needs real item/rule data. |
 | #770                            | **Fixed (synthetic)**                   | Zero-decimal currency display precision and tax truncation helper with regression tests.                                                                                                    |
@@ -77,6 +77,12 @@ This improves fork-side evidence but **does not close P0-1 or P0-2**. Real broke
 `tests/testLaterPhaseReconciliation.spec.ts` adds labelled synthetic fixtures for #1394, #1410, #1541, #842, #1431, and #1535. It covers exported customer balance numeric values, carry-forward ledger opening balance, prior-fiscal-year P&L date ranges and totals, finite stock valuation, pricing-rule item candidates, and root-account recreation constraints. See `LATER_PHASE_EVIDENCE.md`.
 
 These fixtures support local code hardening, but real customer CSVs, a prior-fiscal-year company DB, a large imported stock ledger, concrete pricing-rule data, and a COA delete/recreate trace remain required before end-to-end local closure.
+
+### Later-phase checkpoint 3 (2026-11-07)
+
+Electron and packaging dependencies were upgraded to the latest stable versions verified from the npm registry. Native architecture checks, Linux desktop sandbox guidance, Node/toolchain preflight, and CI packaging gates were added. See `LATER_PHASE_EVIDENCE.md` and `LINUX_SANDBOX.md`.
+
+This is **not** a packaged launch smoke test. The manual native-runner workflow has not executed in the Arena sandbox, and no upstream platform issue is closed until its outputs are attached.
 
 ---
 
@@ -113,9 +119,9 @@ These fixtures support local code hardening, but real customer CSVs, a prior-fis
 ### P0-5. Release/runtime platform blockers
 
 **Upstream:** [#1102](https://github.com/frappe/books/issues/1102), [#1413](https://github.com/frappe/books/issues/1413), [#1513](https://github.com/frappe/books/issues/1513), [#1516](https://github.com/frappe/books/issues/1516)
-**Why critical:** packaged builds may not launch on Ubuntu 24.04 / AppImage, ARM64 artifacts may ship x86_64 `better-sqlite3` native modules, and Electron 22 is EOL with no security patches.
-**Fork status:** **Platform / Triage.** Local `package.json` is still `0.37.0`, Electron `22.3.27`, and `better-sqlite3 ^9.2.2`; no ARM64 artifact verification or Electron upgrade has been done.
-**Next action:** reproduce Linux launch stalls, verify the `.node` architecture inside ARM64 packages, decide the fork release/tag policy, and keep the Electron upgrade as separate platform hardening with a native-module rebuild.
+**Why critical:** packaged builds may not launch on Ubuntu 24.04 / AppImage, ARM64 artifacts may ship x86_64 `better-sqlite3` native modules, and the upstream Electron 22 runtime was EOL with no security patches.
+**Fork status:** **Platform gate (synthetic).** Electron `45.2.3`, builder `26.18.0`, Node `22.12+` preflight, x64/ARM64 native-architecture checks, Linux sandbox guidance, and a manual packaged CI gate are in place. Real packaged launch outputs are still required.
+**Next action:** run `.github/workflows/platform.yml` on native x64/ARM64 runners, attach the packaged launch and `.node` architecture outputs, then decide the fork release/tag policy in checkpoint 4.
 
 ---
 
@@ -223,6 +229,6 @@ An upstream issue can be marked locally **closed** only when all of the followin
 
 1. Pass 4 code-level P0–P2 fixes are recorded above; synthetic verification is complete.
 2. Checkpoint 1 recorded labelled synthetic `DatabaseManager` reproductions for P0-1 / P0-2, and checkpoint 2 recorded labelled synthetic reconciliation fixtures. Real broken-`.db` samples and customer/COA/pricing/stock-ledger data remain open gates.
-3. Close the remaining platform/release issues only with packaged-artifact smoke tests.
+3. Checkpoint 3 added platform policy and a manual packaged-artifact gate; run it on native x64/ARM64 runners, then finish the checkpoint-4 release policy.
 4. Re-run the full verification gates after each remaining fix.
 5. Only then revisit visual redesign, new sidebar roots, and extra POS clicks.

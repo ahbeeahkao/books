@@ -21,6 +21,7 @@ import registerAutoUpdaterListeners from './main/registerAutoUpdaterListeners';
 import registerIpcMainActionListeners from './main/registerIpcMainActionListeners';
 import registerIpcMainMessageListeners from './main/registerIpcMainMessageListeners';
 import registerProcessListeners from './main/registerProcessListeners';
+import { shouldDisableChromiumSandbox } from './src/utils/platform';
 
 export class Main {
   title = 'Frappe Books';
@@ -48,6 +49,9 @@ export class Main {
 
     // https://github.com/electron-userland/electron-builder/issues/4987
     app.commandLine.appendSwitch('disable-http2');
+    if (shouldDisableChromiumSandbox(process.platform, process.env)) {
+      app.commandLine.appendSwitch('no-sandbox');
+    }
     autoUpdater.requestHeaders = {
       'Cache-Control':
         'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -55,7 +59,7 @@ export class Main {
 
     this.registerListeners();
     if (this.isMac && this.isDevelopment) {
-      app.dock.setIcon(this.icon);
+      app.dock?.setIcon(this.icon);
     }
   }
 
