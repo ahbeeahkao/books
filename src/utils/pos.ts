@@ -16,6 +16,8 @@ import {
   assertWholeNumberQuantityForUnit,
 } from './uom';
 import { POSClosingShift } from 'models/inventory/Point of Sale/POSClosingShift';
+import { getStockItemName, validateInvoiceQty } from './posStock';
+import type { StockItemLike } from './posStock';
 
 export async function getPOSOpeningShiftDoc(
   fyo: Fyo
@@ -104,6 +106,7 @@ async function validateSinvItems(
   itemQtyMap: ItemQtyMap,
   isReturn?: string
 ) {
+  const trackItemMap: Record<string, boolean> = {};
   for (const item of sinvItems) {
     await assertWholeNumberQuantity(fyo, item.item, item.quantity);
     await assertWholeNumberQuantityForUnit(
@@ -112,34 +115,24 @@ async function validateSinvItems(
       item.transferQuantity
     );
 
-    const trackItem = await fyo.getValue(
+    const itemName = getStockItemName(item as unknown as StockItemLike);
+    if (!itemName) {
+      continue;
+    }
+
+    trackItemMap[itemName] = !!(await fyo.getValue(
       ModelNameEnum.Item,
-      item.item as string,
+      itemName,
       'trackItem'
-    );
-
-    if (!trackItem) {
-      return;
-    }
-
-    if (!item.quantity || (item.quantity < 1 && !isReturn)) {
-      throw new ValidationError(
-        t`Invalid Quantity for Item ${item.item as string}`
-      );
-    }
-
-    if (!itemQtyMap[item.item as string]) {
-      throw new ValidationError(t`Item ${item.item as string} not in Stock`);
-    }
-
-    if (item.quantity > itemQtyMap[item.item as string].availableQty) {
-      throw new ValidationError(
-        t`Insufficient Quantity. Item ${item.item as string} has only ${
-          itemQtyMap[item.item as string].availableQty
-        } quantities available. you selected ${item.quantity}`
-      );
-    }
+    ));
   }
+
+  validateInvoiceQty(
+    itemQtyMap,
+    sinvItems as unknown as StockItemLike[],
+    !!isReturn,
+    trackItemMap
+  );
 }
 
 export async function validateShipment(itemSerialNumbers: ItemSerialNumbers) {

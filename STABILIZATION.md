@@ -98,7 +98,17 @@ Phase 1 CP3 results (the third proposed checkpoint; checkpoint order is not sepa
 - `tests/testUomParity.spec.ts` adds 68 assertions covering schema parity, the computed UOM alias, conversion validation, feature-gated hidden/required maps, `Item.validate()`, fractional stock and transfer quantities, transaction-row validators, configured weight UOMs, and scan resolution with UOM/conversion rows.
 - Full suite: **1167 / 1167 passing** across 30 spec files; combined targeted CP1/CP2/CP3 migration, barcode, and UOM specs: **147 / 147 passing**.
 - ESLint: **0 errors, 0 warnings**; typecheck: **0 errors**; Prettier 2.4.1 on changed files: clean; build `--nopackage`: passed with only pre-existing Vite warnings.
-- CP4–CP5, FTS/scheduled jobs, and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction.
+- CP5, FTS/scheduled jobs, and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction.
+
+Phase 1 CP4 results (the fourth checkpoint; the user confirmed `CP4 then CP5, then create PR`):
+
+- `src/utils/posStock.ts` adds one pure, location-aware validator: `getAvailableQty()` reads total or batch stock from the existing `ItemQtyMap`; `validateAddItemQty()` and `validateInvoiceQty()` share one over-quantity rule and one canonical error message. It does not query stock directly.
+- `POS.vue.addItem()` and batch selection now call the shared validator. Duplicate `availableQty <= 0`, `currentQty + addQty > availableQty`, and direct `fyo.db.getStockQuantity()` branches were removed. `setItems()` uses `getAvailableQty()` while `hideUnavailableItems` remains a UI filter only.
+- `models/helpers.validateQty()` and `src/utils/pos.validateSinv()` delegate to the shared validator. Final validation now aggregates repeated item/batch rows, respects batch-specific stock, bypasses return invoices and non-inventory items, and preserves the CP3 whole-number quantity assertions.
+- `tests/testPosStockValidator.spec.ts` adds 26 assertions covering total/batch availability, zero stock, over-quantity add-item and final validation, batch splits, return and non-inventory bypasses, free items, invalid quantities, and weight-barcode quantities.
+- Full suite: **1193 / 1193 passing** across 31 spec files; targeted CP4 spec: **26 / 26 passing**.
+- ESLint: **0 errors, 0 warnings**; typecheck: **0 errors**; Prettier 2.4.1 on changed files: clean; build `--nopackage`: passed with only pre-existing Vite warnings.
+- CP5, FTS/scheduled jobs, and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction.
 
 ## Fixes in pass 1
 
@@ -209,4 +219,4 @@ Issue bodies to paste after reconnect:
 4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513).
 5. Keep Electron 22 upgrade (#1516) as separate platform hardening.
 6. Scope decisions are confirmed and `PHASE1_DESIGN.md` is written; review it before implementation.
-7. CP1 (`itemWeightDigits` and the shared barcode helper), CP2 (multi-barcode / Item Barcode child table), and CP3 (UOM parity) are implemented and verified above. CP4 (POS stock validator) and CP5 (custom-form storage decision) remain after checkpoint-order confirmation, following the existing native desktop style and minimizing clicks.
+7. CP1 (`itemWeightDigits` and the shared barcode helper), CP2 (multi-barcode / Item Barcode child table), CP3 (UOM parity), and CP4 (POS stock validator) are implemented and verified above. CP5 (custom-form storage decision) remains, then a PR is created; the user confirmed this order. Work follows the existing native desktop style and minimizes clicks.
