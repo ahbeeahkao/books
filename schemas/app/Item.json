@@ -140,6 +140,13 @@
       "section": "Inventory"
     },
     {
+      "fieldname": "barcodes",
+      "label": "Barcodes",
+      "fieldtype": "Table",
+      "target": "ItemBarcode",
+      "section": "Inventory"
+    },
+    {
       "fieldname": "trackItem",
       "label": "Track Inventory",
       "fieldtype": "Check",
@@ -198,6 +205,7 @@
     "incomeAccount",
     "expenseAccount",
     "barcode",
+    "barcodes",
     "hsnCode",
     "trackItem",
     "uom"

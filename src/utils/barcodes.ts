@@ -32,6 +32,7 @@ export type BarcodeItem = {
   itemCode?: string | null;
   unit?: string | null;
   barcodes: string[];
+  barcodeUnits?: Record<string, string | null>;
 };
 
 export type BarcodeUnit = {
@@ -46,6 +47,24 @@ export type ScannedItem<T extends BarcodeItem = BarcodeItem> = {
   isWeightBarcode: boolean;
 };
 
+export type ItemBarcodeRow = {
+  name?: unknown;
+  parent?: unknown;
+  barcode?: unknown;
+  barcodeType?: unknown;
+  uom?: unknown;
+};
+
+export type ExistingItemBarcodeRow = {
+  parent?: unknown;
+  barcode?: unknown;
+};
+
+export type ItemBarcodeValidationIssue =
+  | { type: 'missing' }
+  | { type: 'within'; barcode: string }
+  | { type: 'existing'; barcode: string; item: string };
+
 interface BarcodeDatabaseRow {
   name?: unknown;
   barcode?: unknown;
@@ -56,6 +75,7 @@ interface BarcodeDatabaseRow {
 interface BarcodeChildRow {
   parent?: unknown;
   barcode?: unknown;
+  uom?: unknown;
 }
 
 export function asBarcodeString(value: unknown): string | null {
@@ -187,20 +207,104 @@ export function getWeightBarcodeQuantity(
   return quantity > 0 ? quantity : 0;
 }
 
-function getBarcodes(item: BarcodeItem): string[] {
-  if (item.barcodes.length) {
-    return item.barcodes;
+export function getItemBarcodeValidationIssue(
+  rows: ItemBarcodeRow[],
+  existingRows: ExistingItemBarcodeRow[] = [],
+  currentItemName?: unknown
+): ItemBarcodeValidationIssue | undefined {
+  const currentName = asBarcodeString(currentItemName);
+  const seen = new Set<string>();
+
+  for (const row of rows) {
+    const barcode = asBarcodeString(row.barcode);
+    if (!barcode) {
+      return { type: 'missing' };
+    }
+
+    const key = barcode.toLocaleLowerCase();
+    if (seen.has(key)) {
+      return { type: 'within', barcode };
+    }
+
+    seen.add(key);
   }
 
-  return item.barcode ? [item.barcode] : [];
+  for (const row of existingRows) {
+    const barcode = asBarcodeString(row.barcode);
+    const parent = asBarcodeString(row.parent);
+    if (!barcode || parent === currentName) {
+      continue;
+    }
+
+    if (seen.has(barcode.toLocaleLowerCase())) {
+      return { type: 'existing', barcode, item: parent ?? '' };
+    }
+  }
+
+  return undefined;
 }
 
-function itemMatchesCode(item: BarcodeItem, code: string): boolean {
-  if (item.name === code || item.itemCode === code) {
-    return true;
+type BarcodeMatch<T extends BarcodeItem> = { item: T; barcode?: string };
+
+function findByChildBarcodes<T extends BarcodeItem>(
+  items: T[],
+  code: string
+): BarcodeMatch<T> | undefined {
+  for (const item of items) {
+    if ((item.barcodes ?? []).includes(code)) {
+      return { item, barcode: code };
+    }
   }
 
-  return getBarcodes(item).includes(code);
+  return undefined;
+}
+
+function findByLegacyBarcode<T extends BarcodeItem>(
+  items: T[],
+  code: string
+): BarcodeMatch<T> | undefined {
+  const item = items.find((candidate) => candidate.barcode === code);
+  return item ? { item } : undefined;
+}
+
+function findByItemCode<T extends BarcodeItem>(
+  items: T[],
+  code: string
+): BarcodeMatch<T> | undefined {
+  const item = items.find((candidate) => candidate.itemCode === code);
+  return item ? { item } : undefined;
+}
+
+function findByName<T extends BarcodeItem>(
+  items: T[],
+  code: string
+): BarcodeMatch<T> | undefined {
+  const item = items.find((candidate) => candidate.name === code);
+  return item ? { item } : undefined;
+}
+
+function findByNormalScan<T extends BarcodeItem>(
+  items: T[],
+  code: string
+): BarcodeMatch<T> | undefined {
+  return (
+    findByChildBarcodes(items, code) ??
+    findByLegacyBarcode(items, code) ??
+    findByItemCode(items, code) ??
+    findByName(items, code)
+  );
+}
+
+function findByWeightItemCode<T extends BarcodeItem>(
+  items: T[],
+  code: string
+): BarcodeMatch<T> | undefined {
+  return (
+    findByItemCode(items, code) ??
+    findByName(items, code) ??
+    findByLegacyBarcode(items, code) ??
+    findByChildBarcodes(items, code)
+  );
 }
 
 export function findScannedItem<T extends BarcodeItem>(
@@ -214,36 +318,39 @@ export function findScannedItem<T extends BarcodeItem>(
   }
 
   const weight = parseWeightBarcode(scannedCode, settings);
-  const lookupCode = weight?.itemCode ?? scannedCode;
-  const item =
-    items.find((candidate) => itemMatchesCode(candidate, lookupCode)) ??
-    items.find((candidate) => itemMatchesCode(candidate, scannedCode));
+  const match = weight
+    ? findByChildBarcodes(items, scannedCode) ??
+      findByLegacyBarcode(items, scannedCode) ??
+      findByWeightItemCode(items, weight.itemCode)
+    : findByNormalScan(items, scannedCode);
 
-  if (!item) {
+  if (!match) {
     return;
   }
 
   if (!weight) {
-    return { item, quantity: 1, isWeightBarcode: false };
+    return { item: match.item, quantity: 1, isWeightBarcode: false };
   }
 
+  const unit = match.barcode
+    ? match.item.barcodeUnits?.[match.barcode] ?? match.item.unit
+    : match.item.unit;
+
   return {
-    item,
-    quantity: getWeightBarcodeQuantity(weight, {
-      name: item.unit ?? undefined,
-    }),
+    item: match.item,
+    quantity: getWeightBarcodeQuantity(weight, unit),
     isWeightBarcode: true,
   };
 }
 
 async function getChildBarcodeRows(fyo: Fyo): Promise<BarcodeChildRow[]> {
-  if (!fyo.schemaMap?.['ItemBarcode']) {
+  if (!fyo.schemaMap?.[ModelNameEnum.ItemBarcode]) {
     return [];
   }
 
   try {
-    return (await fyo.db.getAll('ItemBarcode', {
-      fields: ['parent', 'barcode'],
+    return (await fyo.db.getAll(ModelNameEnum.ItemBarcode, {
+      fields: ['parent', 'barcode', 'uom'],
     })) as unknown as BarcodeChildRow[];
   } catch {
     return [];
@@ -256,6 +363,7 @@ export async function getBarcodeRows(fyo: Fyo): Promise<BarcodeItem[]> {
   })) as unknown as BarcodeDatabaseRow[];
 
   const childBarcodes = new Map<string, string[]>();
+  const barcodeUnits = new Map<string, Record<string, string | null>>();
   for (const row of await getChildBarcodeRows(fyo)) {
     const parent = asBarcodeString(row.parent);
     const barcode = asBarcodeString(row.barcode);
@@ -268,6 +376,10 @@ export async function getBarcodeRows(fyo: Fyo): Promise<BarcodeItem[]> {
       barcodes.push(barcode);
     }
     childBarcodes.set(parent, barcodes);
+
+    const units = barcodeUnits.get(parent) ?? {};
+    units[barcode] = asBarcodeString(row.uom);
+    barcodeUnits.set(parent, units);
   }
 
   return itemRows.flatMap((row) => {
@@ -276,25 +388,14 @@ export async function getBarcodeRows(fyo: Fyo): Promise<BarcodeItem[]> {
       return [];
     }
 
-    const legacyBarcode = asBarcodeString(row.barcode);
-    const barcodes: string[] = [];
-    if (legacyBarcode && !barcodes.includes(legacyBarcode)) {
-      barcodes.push(legacyBarcode);
-    }
-
-    for (const barcode of childBarcodes.get(name) ?? []) {
-      if (!barcodes.includes(barcode)) {
-        barcodes.push(barcode);
-      }
-    }
-
     return [
       {
         name,
-        barcode: legacyBarcode,
+        barcode: asBarcodeString(row.barcode),
         itemCode: asBarcodeString(row.itemCode),
         unit: asBarcodeString(row.unit),
-        barcodes,
+        barcodes: [...(childBarcodes.get(name) ?? [])],
+        barcodeUnits: barcodeUnits.get(name),
       },
     ];
   });

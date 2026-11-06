@@ -80,6 +80,15 @@ Phase 1 CP1 results (the first proposed checkpoint; checkpoint order is not sepa
 - ESLint: **0 errors, 0 warnings**; typecheck: **0 errors**; Prettier 2.4.1 on changed files: clean; build `--nopackage`: passed with only pre-existing Vite warnings.
 - Pass-3 broken-DB coverage remains synthetic; the upstream P0 database reports are not claimed fixed end-to-end by CP1.
 
+Phase 1 CP2 results (the second proposed checkpoint; checkpoint order is not separately confirmed):
+
+- `ItemBarcode.json` adds an inline child table with `barcode`, `barcodeType`, and optional `uom`; `Item.json` gains `barcodes` while the legacy `Item.barcode` column is preserved. `Item.ts` hides the child table unless barcodes are enabled and rejects blank, repeated, and cross-item duplicate barcodes with translatable errors.
+- `src/utils/barcodes.ts` resolves scans against `ItemBarcode` first, then legacy `Item.barcode`, `itemCode`, and `name`; `MultiLabelLink.vue` includes child barcodes in the existing POS dropdown via `fyo.db.getAll`. No FTS, scheduled jobs, sidebar entry, separate manager, or extra clicks were added.
+- `backfillItemBarcodes` is a post-migration `0.38.0` patch above the current `0.37.0` app version. Under the confirmed strict automatic migration with backups policy, `DatabaseCore.migrate()` creates the child table, `DatabaseManager.#executeMigration()` retains the backup path, and the patch records `PatchRun`; a regression test asserts a successful, idempotent backfill and preserved legacy data.
+- Full suite: **1099 / 1099 passing** across 29 spec files; targeted CP1/CP2 migration/barcode specs: **79 / 79 passing**.
+- ESLint: **0 errors, 0 warnings**; typecheck: **0 errors**; Prettier 2.4.1 on changed files: clean; build `--nopackage`: passed with only pre-existing Vite warnings.
+- CP3–CP5, FTS/scheduled jobs, and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction.
+
 ## Fixes in pass 1
 
 ### P0: computed `status` filter leaked into SQL (upstream #1446)

@@ -1,0 +1,45 @@
+{
+  "name": "ItemBarcode",
+  "label": "Item Barcode",
+  "isChild": true,
+  "fields": [
+    {
+      "fieldname": "barcode",
+      "label": "Barcode",
+      "fieldtype": "Data",
+      "required": true
+    },
+    {
+      "fieldname": "barcodeType",
+      "label": "Barcode Type",
+      "fieldtype": "Select",
+      "default": "Custom",
+      "options": [
+        {
+          "value": "EAN",
+          "label": "EAN"
+        },
+        {
+          "value": "UPC",
+          "label": "UPC"
+        },
+        {
+          "value": "Code 128",
+          "label": "Code 128"
+        },
+        {
+          "value": "Custom",
+          "label": "Custom"
+        }
+      ]
+    },
+    {
+      "fieldname": "uom",
+      "label": "UOM",
+      "fieldtype": "Link",
+      "target": "UOM",
+      "create": true
+    }
+  ],
+  "tableFields": ["barcode", "barcodeType", "uom"]
+}

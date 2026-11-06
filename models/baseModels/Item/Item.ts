@@ -11,6 +11,12 @@ import {
   ValidationMap,
 } from 'fyo/model/types';
 import { ValidationError } from 'fyo/utils/errors';
+import { ModelNameEnum } from 'models/types';
+import {
+  ExistingItemBarcodeRow,
+  getItemBarcodeValidationIssue,
+  ItemBarcodeRow,
+} from 'src/utils/barcodes';
 import { Money } from 'pesa';
 import { AccountRootTypeEnum, AccountTypeEnum } from '../Account/types';
 
@@ -33,6 +39,7 @@ export class Item extends Doc {
   serialNumberSeries?: string;
   datafromErp?: boolean;
   uomConversions: UOMConversionItem[] = [];
+  barcodes: ItemBarcodeRow[] = [];
 
   formulas: FormulaMap = {
     incomeAccount: {
@@ -157,6 +164,42 @@ export class Item extends Doc {
     }
   }
 
+  async validate(): Promise<void> {
+    await super.validate();
+    if (!this.fyo.schemaMap?.[ModelNameEnum.ItemBarcode]) {
+      return;
+    }
+
+    const existing = (await this.fyo.db.getAll(ModelNameEnum.ItemBarcode, {
+      fields: ['name', 'parent', 'barcode'],
+    })) as unknown as ExistingItemBarcodeRow[];
+    const issue = getItemBarcodeValidationIssue(
+      this.barcodes ?? [],
+      existing,
+      this.name
+    );
+
+    if (!issue) {
+      return;
+    }
+
+    if (issue.type === 'missing') {
+      throw new ValidationError(
+        this.fyo.t`Barcode is required for every barcode row.`
+      );
+    }
+
+    if (issue.type === 'within') {
+      throw new ValidationError(
+        this.fyo.t`Barcode ${issue.barcode} is repeated in this item.`
+      );
+    }
+
+    throw new ValidationError(
+      this.fyo.t`Barcode ${issue.barcode} is already used by ${issue.item}.`
+    );
+  }
+
   static filters: FiltersMap = {
     incomeAccount: () => ({
       isGroup: false,
@@ -265,6 +308,7 @@ export class Item extends Doc {
       this.itemType !== 'Product' ||
       (this.inserted && !this.trackItem),
     barcode: () => !this.fyo.singles.InventorySettings?.enableBarcodes,
+    barcodes: () => !this.fyo.singles.InventorySettings?.enableBarcodes,
     hasBatch: () => !this.fyo.singles.InventorySettings?.enableBatches,
     hasSerialNumber: () =>
       !(

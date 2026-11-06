@@ -21,6 +21,7 @@ export enum ModelNameEnum {
   GetStarted = 'GetStarted',
   Defaults = 'Defaults',
   Item = 'Item',
+  ItemBarcode = 'ItemBarcode',
   ItemGroup = 'ItemGroup',
   ItemEnquiry = 'ItemEnquiry',
   UOM = 'UOM',
