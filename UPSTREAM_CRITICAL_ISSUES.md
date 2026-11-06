@@ -52,7 +52,7 @@ Implemented after this tracker was created. No upstream GitHub issues were close
 | Upstream issue(s)               | Local status                            | Evidence / remaining gate                                                                                                                                                                           |
 | ------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | #1446                           | **Fixed**                               | Existing computed-status filter regression; unchanged from Pass 1.                                                                                                                                  |
-| #1536, #1351, #1291, #1546      | **Synthetic**                           | Existing FK/migration and `SingleValue` fixes; real broken `.db` reproductions are still required before local closure.                                                                             |
+| #1536, #1351, #1291, #1546      | **Synthetic (DatabaseManager)**         | Checkpoint 1 reproduces documented shapes through `DatabaseManager.connectToDatabase()`; real broken `.db` samples are still required before local closure.                                         |
 | #815, #819, #1394, #1410, #1541 | **Code fix (synthetic)**                | Normalized ledger dates and fiscal-year endpoint UTC parts; zero-decimal currency truncation and report export BOM were added. #1394, #1410, and #1541 still need concrete reconciliation fixtures. |
 | #1102, #1413, #1513, #1516      | **Unresolved platform**                 | Needs Linux/ARM64 artifact inspection, native-architecture verification, and a supported Electron upgrade with packaged smoke tests.                                                                |
 | #1538, #842                     | **Code fix (synthetic) / data pending** | Stock-in-hand posting now uses net item amount instead of GST-inclusive grand total; large imported stock-ledger dataset still needed for #842.                                                     |
@@ -66,6 +66,12 @@ Implemented after this tracker was created. No upstream GitHub issues were close
 | #1515, #1395, #1551             | **Unresolved release/distribution**     | Fork release policy and RPM/Flatpak scriptlets need packaged artifacts and package-manager verification.                                                                                            |
 | #459, #624, #1470, #1495, #1427 | **Deferred**                            | Translation/regional/UI polish remains with later visual redesign work.                                                                                                                             |
 
+### Later-phase checkpoint 1 (2026-11-07)
+
+`backend/database/tests/testSyntheticIssueStepDatabases.spec.ts` adds four **synthetic issue-step** reproductions through the public `DatabaseManager.connectToDatabase()` path, with 48 targeted assertions. It covers #1351 missing FKs on a copied old DB, #1536 dangling FK fail-loud behaviour, #1291 post-update missing columns, and #1546 `Misc.openCount` in a writable versus non-writable DB directory. Fixtures are generated in temporary directories; no binary `.db` is committed. See `LATER_PHASE_EVIDENCE.md`.
+
+This improves fork-side evidence but **does not close P0-1 or P0-2**. Real broken company DBs and real `foreign_key_check` / file-permission traces remain the gate for end-to-end local closure.
+
 ---
 
 ## P0 — must verify or fix before new features
@@ -74,14 +80,14 @@ Implemented after this tracker was created. No upstream GitHub issues were close
 
 **Upstream:** [#1536](https://github.com/frappe/books/issues/1536), [#1351](https://github.com/frappe/books/issues/1351), [#1291](https://github.com/frappe/books/issues/1291)
 **Why critical:** users cannot open or restore company databases; this is the highest data-availability risk.
-**Fork status:** **Synthetic.** `backend/database/core.ts` now rebuilds tables safely when columns are removed or foreign keys are added, fills missing required-column defaults, restores FK enforcement, and checks `foreign_key_check`. `backend/database/tests/testMigration.spec.ts` and `backend/database/tests/testSyntheticBrokenDatabases.spec.ts` cover legacy shapes.
+**Fork status:** **Synthetic (DatabaseManager).** `backend/database/core.ts` rebuilds tables safely, fills required-column defaults, restores FK enforcement, and checks `foreign_key_check`. `backend/database/tests/testSyntheticIssueStepDatabases.spec.ts` now reproduces the documented #1536 / #1351 / #1291 shapes through `DatabaseManager.connectToDatabase()`, in addition to the earlier core-level regression suites.
 **Next action:** obtain real broken `.db` files, reproduce DB open / restore / migration against `0.37.0`, and verify historical schema order, dangling FKs, backup/restore locking, and `PatchRun` state. Do not mark the upstream reports fully closed from synthetic tests alone.
 
 ### P0-2. `SingleValue.openCount` update fails with “unable to open database file”
 
 **Upstream:** [#1546](https://github.com/frappe/books/issues/1546)
 **Why critical:** app fails while writing the open-count single value; possible DB lock, missing table/column, or file availability problem.
-**Fork status:** **Synthetic.** Pass 3 reproduces missing/legacy `SingleValue` shapes and verifies `Misc.openCount` can be written and read after migration.
+**Fork status:** **Synthetic (DatabaseManager).** Pass 3 covers missing/legacy `SingleValue` shapes; checkpoint 1 adds a writable-directory versus non-writable-directory `Misc.openCount` reproduction through `DatabaseManager.connectToDatabase()`.
 **Next action:** obtain a real `0.37.0-dev` company DB that shows the failure; test backup/restore locking, file permissions, concurrent open paths, and the exact `update SingleValue ... openCount` statement.
 
 ### P0-3. Computed `status` filter leaks into SQL
@@ -210,7 +216,7 @@ An upstream issue can be marked locally **closed** only when all of the followin
 ## Sequencing after this register
 
 1. Pass 4 code-level P0–P2 fixes are recorded above; synthetic verification is complete.
-2. Next, do the real broken-`.db` reproductions for P0-1 / P0-2 and reconcile the data-dependent report/payment issues.
+2. Checkpoint 1 recorded labelled synthetic `DatabaseManager` reproductions for P0-1 / P0-2; real broken-`.db` samples and data-dependent reconciliation inputs remain open gates.
 3. Close the remaining platform/release issues only with packaged-artifact smoke tests.
 4. Re-run the full verification gates after each remaining fix.
 5. Only then revisit visual redesign, new sidebar roots, and extra POS clicks.

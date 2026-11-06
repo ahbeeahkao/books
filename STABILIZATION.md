@@ -259,3 +259,17 @@ Verification:
 - `git diff --check`: clean.
 
 Unresolved by design: real broken `.db` files, packaged Linux/ARM64 smoke tests, Electron 22 upgrade, release tags, RPM/Flatpak scriptlets, concrete customer-balance/COA/pricing-rule fixtures, and any visual redesign/new sidebar roots/extra POS clicks. These remain in `UPSTREAM_CRITICAL_ISSUES.md` with explicit gates.
+
+## Later phase — checkpoint 1 (2026-11-07)
+
+After PR #2 opened, the authorized later phase started with synthetic issue-step reproductions. Upstream attachment retrieval was attempted first; #819's `test.books.db.zip` redirects to `objects.githubusercontent.com`, which this sandbox cannot reach. The user authorized generated issue-step fixtures, explicitly labelled synthetic.
+
+`backend/database/tests/testSyntheticIssueStepDatabases.spec.ts` creates temporary SQLite company DBs and opens them through `DatabaseManager.connectToDatabase()`:
+
+- #1351: copied old DB with no `SalesInvoice` foreign keys and a legacy column migrates, restores the `party` FK, and preserves rows.
+- #1536: dangling required Link fails loudly with `foreign key check failed`, preserving the corrupt row and leaving no migration temp table.
+- #1291: newer missing columns from the post-update report are restored on all representative invoice/quote/purchase/receipt/shipment tables, with safe defaults and no FK violations.
+- #1546: `Misc.openCount` fails in a non-writable DB directory and succeeds in a writable copy.
+- Healthy cases assert `AccountingSettings.companyName`, no `Company` DocType, FK enforcement, `foreign_key_check`, `integrity_check`, and temp-table cleanup.
+
+Targeted result: **48 / 48 assertions passing**; `vue-tsc --noEmit --pretty false` is clean. Evidence and limitations are in `LATER_PHASE_EVIDENCE.md`. No binary `.db` is committed. These are not real user samples; no upstream issue is closed, and the real broken-`.db` gate remains open.
