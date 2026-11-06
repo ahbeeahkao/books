@@ -16,7 +16,7 @@
         (!posProfile?.posUI && fyo.singles.POSSettings?.posUI === 'Classic')
       "
       :table-view="tableView"
-      :profile="(posProfile as POSProfile)"
+      :profile="posProfile as POSProfile"
       :total-quantity="totalQuantity"
       :item-quantity-qap="itemQtyMap"
       :loyalty-points="loyaltyPoints"
@@ -26,13 +26,13 @@
       :item-search-term="itemSearchTerm"
       :selected-item-group="selectedItemGroup"
       :is-pos-shift-open="isPosShiftOpen"
-      :items="(items as [] as POSItem[])"
+      :items="items as [] as POSItem[]"
       :item-visibility="itemVisibility"
-      :sinv-doc="(sinvDoc as SalesInvoice)"
+      :sinv-doc="sinvDoc as SalesInvoice"
       :disable-pay-button="disablePayButton"
       :open-payment-modal="openPaymentModal"
-      :item-discounts="(itemDiscounts as Money)"
-      :coupons="(coupons as AppliedCouponCodes)"
+      :item-discounts="itemDiscounts as Money"
+      :coupons="coupons as AppliedCouponCodes"
       :open-price-list-modal="openPriceListModal"
       :open-item-enquiry-modal="openItemEnquiryModal"
       :applied-coupons-count="appliedCouponsCount"
@@ -75,7 +75,7 @@
     <ModernPOS
       v-else
       :table-view="tableView"
-      :profile="(posProfile as POSProfile)"
+      :profile="posProfile as POSProfile"
       :total-quantity="totalQuantity"
       :item-quantity-qap="itemQtyMap"
       :loyalty-points="loyaltyPoints"
@@ -85,14 +85,14 @@
       :item-search-term="itemSearchTerm"
       :selected-item-group="selectedItemGroup"
       :is-pos-shift-open="isPosShiftOpen"
-      :items="(items as [] as POSItem[])"
+      :items="items as [] as POSItem[]"
       :item-visibility="itemVisibility"
-      :sinv-doc="(sinvDoc as SalesInvoice)"
+      :sinv-doc="sinvDoc as SalesInvoice"
       :disable-pay-button="disablePayButton"
       :open-payment-modal="openPaymentModal"
       :open-keyboard-modal="openKeyboardModal"
-      :item-discounts="(itemDiscounts as Money)"
-      :coupons="(coupons as AppliedCouponCodes)"
+      :item-discounts="itemDiscounts as Money"
+      :coupons="coupons as AppliedCouponCodes"
       :open-price-list-modal="openPriceListModal"
       :open-item-enquiry-modal="openItemEnquiryModal"
       :applied-coupons-count="appliedCouponsCount"
@@ -144,6 +144,12 @@ import ClassicPOS from './ClassicPOS.vue';
 import { ModelNameEnum } from 'models/types';
 import Button from 'src/components/Button.vue';
 import { showToast } from 'src/utils/interactive';
+import {
+  getBarcodeSettings,
+  getMissingWeightBarcodeFields,
+  getScannedItem,
+  WeightBarcodeField,
+} from 'src/utils/barcodes';
 import { Item } from 'models/baseModels/Item/Item';
 import { Shipment } from 'models/inventory/Shipment';
 import { routeTo, toggleSidebar } from 'src/utils/ui';
@@ -546,80 +552,41 @@ export default defineComponent({
 
     async handleItemSearch(searchTerm: string, addItem?: boolean) {
       this.itemSearchTerm = searchTerm;
-      if (!addItem) return;
+      if (!addItem) {
+        return;
+      }
 
-      let quantity = 1;
-      const posSettings = fyo.singles.POSSettings;
-      const isWeightEnabledBarcode = posSettings?.weightEnabledBarcode;
-
-      const checkDigits = posSettings?.checkDigits || '';
-      const itemCodeDigits = posSettings?.itemCodeDigits || 0;
-      const weightDigits = posSettings?.itemWeightDigits || 0;
-
-      const expectedWeightBarcodeLength =
-        String(checkDigits).length +
-        Number(itemCodeDigits) +
-        Number(weightDigits);
-
-      let isWeightBarcode = false;
-      let itemCode = searchTerm;
-      let weightPart = '';
-
-      if (
-        isWeightEnabledBarcode &&
-        searchTerm.length === expectedWeightBarcodeLength
-      ) {
-        const extractedItemCode = searchTerm.slice(
-          checkDigits.toString().length,
-          checkDigits.toString().length + itemCodeDigits
+      const scanned = await getScannedItem(this.fyo, searchTerm);
+      if (!scanned) {
+        const missing = getMissingWeightBarcodeFields(
+          getBarcodeSettings(this.fyo)
         );
-        const weightData = searchTerm.slice(
-          checkDigits.toString().length + itemCodeDigits
-        );
-
-        if (!isNaN(Number(weightData))) {
-          isWeightBarcode = true;
-          itemCode = extractedItemCode;
-          weightPart = weightData;
+        if (!missing.length) {
+          return;
         }
+
+        const labels: Record<WeightBarcodeField, string> = {
+          checkDigits: this.t`Check Digits`,
+          itemCodeDigits: this.t`Item Code Digits`,
+          itemWeightDigits: this.t`Item Weight Digits`,
+        };
+        const fields = missing.map((field) => labels[field]).join(', ');
+        showToast({
+          type: 'error',
+          message: this
+            .t`Configure ${fields} in POS Settings to scan weight barcodes.`,
+        });
+        return;
       }
 
-      const allItems = await this.fyo.db.getAll(ModelNameEnum.Item, {
-        fields: ['name', 'barcode', 'itemCode', 'unit'],
-      });
-
-      let matchedItem = null;
-
-      if (isWeightBarcode) {
-        matchedItem = allItems.find(
-          (item) => item.itemCode === itemCode || item.barcode === itemCode
-        );
-      } else if (searchTerm.length === 12) {
-        matchedItem = allItems.find((item) => item.barcode === searchTerm);
+      const itemDoc = this.getItem(scanned.item.name);
+      if (!itemDoc) {
+        return;
       }
 
-      if (!matchedItem) {
-        matchedItem = allItems.find((item) => item.name === searchTerm);
-      }
-
-      if (!matchedItem) return;
-
-      if (isWeightBarcode && weightPart) {
-        const weightValue = parseInt(weightPart, 10);
-        if ((matchedItem.unit as string)?.toLowerCase() === 'kg') {
-          quantity = weightValue / 1000;
-        } else {
-          quantity = weightValue;
-        }
-      }
-
-      const itemDoc = this.getItem(matchedItem.name as string);
-      if (itemDoc && addItem) {
-        await this.addItem(itemDoc as POSItem, quantity);
-        this.itemSearchTerm = '';
-      }
+      await this.addItem(itemDoc as POSItem, scanned.quantity);
+      this.itemSearchTerm = '';
     },
-
     getItem(name: string) {
       return this.items.find((item) => item.name === name);
     },

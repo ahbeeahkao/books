@@ -434,8 +434,8 @@ export abstract class StockTransfer extends Transfer {
     }),
   };
 
-  async addItem(name: string) {
-    return await addItem(name, this);
+  async addItem(name: string, quantity = 1) {
+    return await addItem(name, this, quantity);
   }
 
   override async change({ doc, changed }: ChangeArg): Promise<void> {

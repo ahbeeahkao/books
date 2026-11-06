@@ -71,6 +71,15 @@ Pass 3 results:
 - Build: `--nopackage` passed; Vite emitted only pre-existing dynamic-import / chunk-size warnings.
 - `git status`: only the pass-3 source/test/doc files below are modified or untracked; pass-1 and pass-2 artifacts are already pushed.
 
+Phase 1 CP1 results (the first proposed checkpoint; checkpoint order is not separately confirmed):
+
+- `POSSettings.json` now persists `itemWeightDigits`. `DatabaseCore.migrate()` backfills the `0` default for existing `POSSettings` singles, and `DatabaseManager.#executeMigration()` still creates the backup. No versioned patch was added because no data transform is needed.
+- `src/utils/barcodes.ts` centralizes settings, weight parsing, quantity conversion, and scan resolution. `Barcode.vue` / `WeightEnabledBarcode.vue`, `CommonForm.vue`, and `POS.vue` now share one parser and forward `(name, quantity)` through `addItem`.
+- Incomplete weight settings produce a translated configuration toast only when an unrecognized scan cannot be resolved; valid plain and legacy 12-digit barcodes still resolve. No Item Barcode child table, UOM work, FTS, or scheduled jobs are included in CP1.
+- Full suite: **1062 / 1062 passing** across 28 spec files; targeted CP1 migration/barcode specs: **43 / 43 passing**.
+- ESLint: **0 errors, 0 warnings**; typecheck: **0 errors**; Prettier 2.4.1 on changed files: clean; build `--nopackage`: passed with only pre-existing Vite warnings.
+- Pass-3 broken-DB coverage remains synthetic; the upstream P0 database reports are not claimed fixed end-to-end by CP1.
+
 ## Fixes in pass 1
 
 ### P0: computed `status` filter leaked into SQL (upstream #1446)

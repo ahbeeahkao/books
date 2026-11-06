@@ -119,6 +119,39 @@ const SalesInvoice = {
   ],
 };
 
+const POSSettings = {
+  name: 'POSSettings',
+  label: 'POS Settings',
+  isSingle: true,
+  isChild: false,
+  fields: [
+    {
+      fieldname: 'weightEnabledBarcode',
+      label: 'Weight Enabled Barcode',
+      fieldtype: 'Check',
+      default: false,
+    },
+    {
+      fieldname: 'checkDigits',
+      label: 'Check Digits',
+      fieldtype: 'Int',
+      default: 0,
+    },
+    {
+      fieldname: 'itemCodeDigits',
+      label: 'Item Code Digits',
+      fieldtype: 'Int',
+      default: 0,
+    },
+    {
+      fieldname: 'itemWeightDigits',
+      label: 'Item Weight Digits',
+      fieldtype: 'Int',
+      default: 0,
+    },
+  ],
+};
+
 const SystemSettings = {
   name: 'SystemSettings',
   label: 'System Settings',
@@ -153,7 +186,10 @@ const SystemSettings = {
   keywordFields: [],
 };
 
-export function getBuiltTestSchemaMap(includeMisc = false): SchemaMap {
+export function getBuiltTestSchemaMap(
+  includeMisc = false,
+  includePOSSettings = false
+): SchemaMap {
   const testSchemaMap: SchemaStubMap = {
     SingleValue: SingleValue as SchemaStub,
     Customer: Customer as SchemaStub,
@@ -164,6 +200,10 @@ export function getBuiltTestSchemaMap(includeMisc = false): SchemaMap {
 
   if (includeMisc) {
     testSchemaMap.Misc = Misc as SchemaStub;
+  }
+
+  if (includePOSSettings) {
+    testSchemaMap.POSSettings = POSSettings as SchemaStub;
   }
 
   const schemaMapClone = cloneDeep(testSchemaMap);

@@ -822,17 +822,22 @@ export function getLoyaltyProgramStatusText(status: string): string {
 }
 
 type ModelsWithItems = Invoice | StockTransfer | StockMovement;
-export async function addItem<M extends ModelsWithItems>(name: string, doc: M) {
+export async function addItem<M extends ModelsWithItems>(
+  name: string,
+  doc: M,
+  quantity = 1
+) {
   if (!doc.canEdit) {
     return;
   }
 
+  const addQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
   const items = (doc.items ?? []) as NonNullable<M['items']>[number][];
 
   let item = items.find((i) => i.item === name);
   if (item) {
     const q = item.quantity ?? 0;
-    await item.set('quantity', q + 1);
+    await item.set('quantity', q + addQuantity);
     return;
   }
 
@@ -843,6 +848,7 @@ export async function addItem<M extends ModelsWithItems>(name: string, doc: M) {
   }
 
   await item.set('item', name);
+  await item.set('quantity', addQuantity);
 
   if (doc instanceof Invoice && !doc.isSales) {
     const batchName = await generateBatchForItem(doc.fyo, name);

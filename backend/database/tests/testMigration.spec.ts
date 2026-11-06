@@ -82,3 +82,38 @@ test('migration rebuilds tables with removed columns without breaking foreign ke
   await db.close();
   t.end();
 });
+
+test('migration persists the CP1 itemWeightDigits default for an existing POS Settings single', async (t) => {
+  const db = new DatabaseCore();
+  await db.connect();
+
+  const legacySchemaMap = getBuiltTestSchemaMap(false, true);
+  const legacyPOSSettings = legacySchemaMap.POSSettings!;
+  legacyPOSSettings.fields = legacyPOSSettings.fields.filter(
+    (field) => field.fieldname !== 'itemWeightDigits'
+  );
+  db.setSchemaMap(legacySchemaMap);
+  await db.migrate();
+
+  const before = await db.get('POSSettings');
+  t.notOk(
+    Object.prototype.hasOwnProperty.call(before, 'itemWeightDigits'),
+    'legacy single has no itemWeightDigits value'
+  );
+
+  db.setSchemaMap(getBuiltTestSchemaMap(false, true));
+  await assertDoesNotThrow(
+    async () => await db.migrate(),
+    'adding the CP1 field to an existing single should not fail'
+  );
+
+  const after = await db.get('POSSettings');
+  t.equal(
+    Number(after.itemWeightDigits),
+    0,
+    'the schema default is persisted for the existing single'
+  );
+
+  await db.close();
+  t.end();
+});
