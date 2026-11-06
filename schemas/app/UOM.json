@@ -15,8 +15,19 @@
       "fieldname": "isWhole",
       "label": "Is Whole",
       "fieldtype": "Check",
-      "default": false
+      "default": false,
+      "description": "Maps to the ERPNext Must Be Whole Number flag."
+    },
+    {
+      "fieldname": "mustBeWholeNumber",
+      "label": "Must Be Whole Number",
+      "fieldtype": "Check",
+      "default": false,
+      "hidden": true,
+      "readOnly": true,
+      "computed": true,
+      "description": "Computed parity alias of Is Whole; not stored in the database."
     }
   ],
-  "quickEditFields": ["isWhole"]
+  "quickEditFields": ["isWhole", "mustBeWholeNumber"]
 }

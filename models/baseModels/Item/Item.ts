@@ -8,10 +8,22 @@ import {
   HiddenMap,
   ListViewSettings,
   ReadOnlyMap,
+  RequiredMap,
   ValidationMap,
 } from 'fyo/model/types';
 import { ValidationError } from 'fyo/utils/errors';
+import { ModelNameEnum } from 'models/types';
+import {
+  ExistingItemBarcodeRow,
+  getItemBarcodeValidationIssue,
+  ItemBarcodeRow,
+} from 'src/utils/barcodes';
 import { Money } from 'pesa';
+import {
+  getUomConversionValidationIssue,
+  getUomFieldConfig,
+  isUomConversionsEnabled,
+} from 'src/utils/uom';
 import { AccountRootTypeEnum, AccountTypeEnum } from '../Account/types';
 
 interface UOMConversionItem {
@@ -32,7 +44,9 @@ export class Item extends Doc {
   hasSerialNumber?: boolean;
   serialNumberSeries?: string;
   datafromErp?: boolean;
+  unit?: string;
   uomConversions: UOMConversionItem[] = [];
+  barcodes: ItemBarcodeRow[] = [];
 
   formulas: FormulaMap = {
     incomeAccount: {
@@ -86,15 +100,6 @@ export class Item extends Doc {
 
   async beforeSync(): Promise<void> {
     await super.beforeSync();
-    const latestByUom = new Map<string, UOMConversionItem>();
-
-    this.uomConversions.forEach((item) => {
-      if (item.conversionFactor > 0) {
-        latestByUom.set(item.uom, item);
-      }
-    });
-
-    this.uomConversions = Array.from(latestByUom.values());
 
     if (this.serialNumberSeries && this.hasSerialNumber) {
       const series = this.serialNumberSeries.trim();
@@ -155,6 +160,71 @@ export class Item extends Doc {
           .sync();
       }
     }
+  }
+
+  async validate(): Promise<void> {
+    await super.validate();
+
+    const conversionsEnabled = isUomConversionsEnabled(this.fyo);
+    if (!conversionsEnabled && this.uomConversions.length > 0) {
+      throw new ValidationError(
+        this.fyo.t`UOM conversions are turned off in Inventory Settings.`
+      );
+    }
+
+    const conversionIssue = getUomConversionValidationIssue(
+      this.uomConversions ?? []
+    );
+    if (conversionIssue) {
+      if (conversionIssue.type === 'missing-uom') {
+        throw new ValidationError(
+          this.fyo.t`UOM is required for every conversion row.`
+        );
+      }
+
+      if (conversionIssue.type === 'duplicate') {
+        throw new ValidationError(
+          this.fyo.t`Each unit can have only one conversion factor.`
+        );
+      }
+
+      throw new ValidationError(
+        this.fyo.t`Conversion factors must be greater than zero.`
+      );
+    }
+
+    if (!this.fyo.schemaMap?.[ModelNameEnum.ItemBarcode]) {
+      return;
+    }
+
+    const existing = (await this.fyo.db.getAll(ModelNameEnum.ItemBarcode, {
+      fields: ['name', 'parent', 'barcode'],
+    })) as unknown as ExistingItemBarcodeRow[];
+    const issue = getItemBarcodeValidationIssue(
+      this.barcodes ?? [],
+      existing,
+      this.name
+    );
+
+    if (!issue) {
+      return;
+    }
+
+    if (issue.type === 'missing') {
+      throw new ValidationError(
+        this.fyo.t`Barcode is required for every barcode row.`
+      );
+    }
+
+    if (issue.type === 'within') {
+      throw new ValidationError(
+        this.fyo.t`Barcode ${issue.barcode} is repeated in this item.`
+      );
+    }
+
+    throw new ValidationError(
+      this.fyo.t`Barcode ${issue.barcode} is already used by ${issue.item}.`
+    );
   }
 
   static filters: FiltersMap = {
@@ -265,6 +335,7 @@ export class Item extends Doc {
       this.itemType !== 'Product' ||
       (this.inserted && !this.trackItem),
     barcode: () => !this.fyo.singles.InventorySettings?.enableBarcodes,
+    barcodes: () => !this.fyo.singles.InventorySettings?.enableBarcodes,
     hasBatch: () => !this.fyo.singles.InventorySettings?.enableBatches,
     hasSerialNumber: () =>
       !(
@@ -272,9 +343,16 @@ export class Item extends Doc {
       ),
     serialNumberSeries: () => !this.hasSerialNumber,
     batchSeries: () => !this.hasBatch,
-    uomConversions: () =>
-      !this.fyo.singles.InventorySettings?.enableUomConversions,
+    unit: () => getUomFieldConfig(this.fyo).hidden,
+    uomConversions: () => getUomFieldConfig(this.fyo).hidden,
     itemGroup: () => !this.fyo.singles.AccountingSettings?.enableitemGroup,
+  };
+
+  required: RequiredMap = {
+    unit: () => getUomFieldConfig(this.fyo).required,
+    uomConversions: () =>
+      getUomFieldConfig(this.fyo).required &&
+      (this.uomConversions?.length ?? 0) > 0,
   };
 
   readOnly: ReadOnlyMap = {

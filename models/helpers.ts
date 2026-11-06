@@ -41,6 +41,12 @@ import { PriceList } from './baseModels/PriceList/PriceList';
 import { InvoiceItem } from './baseModels/InvoiceItem/InvoiceItem';
 import { SalesInvoiceItem } from './baseModels/SalesInvoiceItem/SalesInvoiceItem';
 import { ItemQtyMap, ItemVisibility, POSItem } from 'src/components/POS/types';
+import {
+  getStockItemBatch,
+  getStockItemName,
+  validateInvoiceQty,
+} from 'src/utils/posStock';
+import type { StockItemLike } from 'src/utils/posStock';
 import { ValuationMethod } from './inventory/types';
 import {
   getRawStockLedgerEntries,
@@ -822,17 +828,22 @@ export function getLoyaltyProgramStatusText(status: string): string {
 }
 
 type ModelsWithItems = Invoice | StockTransfer | StockMovement;
-export async function addItem<M extends ModelsWithItems>(name: string, doc: M) {
+export async function addItem<M extends ModelsWithItems>(
+  name: string,
+  doc: M,
+  quantity = 1
+) {
   if (!doc.canEdit) {
     return;
   }
 
+  const addQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
   const items = (doc.items ?? []) as NonNullable<M['items']>[number][];
 
   let item = items.find((i) => i.item === name);
   if (item) {
     const q = item.quantity ?? 0;
-    await item.set('quantity', q + 1);
+    await item.set('quantity', q + addQuantity);
     return;
   }
 
@@ -843,6 +854,7 @@ export async function addItem<M extends ModelsWithItems>(name: string, doc: M) {
   }
 
   await item.set('item', name);
+  await item.set('quantity', addQuantity);
 
   if (doc instanceof Invoice && !doc.isSales) {
     const batchName = await generateBatchForItem(doc.fyo, name);
@@ -1135,63 +1147,32 @@ export async function validateQty(
     return;
   }
 
-  let itemName = item.name as string;
-  const itemhasBatch = await sinvDoc.fyo.getValue(
+  const stockItem = item as unknown as StockItemLike;
+  const itemName = getStockItemName(stockItem);
+  const batch = getStockItemBatch(stockItem);
+  const hasBatch = !!(await sinvDoc.fyo.getValue(
     ModelNameEnum.Item,
-    item.item as string,
+    itemName,
     'hasBatch'
-  );
+  ));
 
+  if (hasBatch && !batch) {
+    throw new ValidationError(t`Please select a batch first`);
+  }
+
+  const trackItem = !!(await sinvDoc.fyo.getValue(
+    ModelNameEnum.Item,
+    itemName,
+    'trackItem'
+  ));
   const itemQtyMap: ItemQtyMap = await getItemQtyMap(sinvDoc);
 
-  if (item instanceof SalesInvoiceItem) {
-    itemName = item.item as string;
-  }
-
-  if (itemhasBatch) {
-    if (!item.batch) {
-      throw new ValidationError(t`Please select a batch first`);
-    }
-  }
-
-  const trackItem = await sinvDoc.fyo.getValue(
-    ModelNameEnum.Item,
-    item.item as string,
-    'trackItem'
+  validateInvoiceQty(
+    itemQtyMap,
+    existingItems as unknown as StockItemLike[],
+    !!sinvDoc.returnAgainst,
+    { [itemName]: trackItem }
   );
-
-  if (!trackItem) {
-    return;
-  }
-
-  if (!itemQtyMap[itemName] || itemQtyMap[itemName].availableQty === 0) {
-    throw new ValidationError(t`Item ${itemName} has Zero Quantity`);
-  }
-
-  if (item.batch) {
-    if (
-      (existingItems && !itemQtyMap[itemName]) ||
-      itemQtyMap[itemName][item.batch as string] <
-        (existingItems[0]?.quantity as number)
-    ) {
-      throw new ValidationError(
-        t`Item ${itemName} only has ${
-          itemQtyMap[itemName][item.batch as string]
-        } Quantity in batch ${item.batch as string}`
-      );
-    }
-  } else {
-    if (
-      (existingItems && !itemQtyMap[itemName]) ||
-      itemQtyMap[itemName].availableQty < (existingItems[0]?.quantity as number)
-    ) {
-      throw new ValidationError(
-        t`Item ${itemName} only has ${itemQtyMap[itemName].availableQty} Quantity`
-      );
-    }
-  }
-
-  return;
 }
 
 export async function getPricingRulesOfCoupons(

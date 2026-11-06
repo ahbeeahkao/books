@@ -128,8 +128,8 @@ export default defineComponent({
       if (!success) {
         return;
       }
-      const extension = name.split('.').at(-1);
-      const type = mime_types[extension];
+      const extension = name.split('.').at(-1)?.toLowerCase() ?? '';
+      const type = mime_types[extension] ?? 'application/octet-stream';
       const dataURL = await getDataURL(type, data);
 
       // @ts-ignore

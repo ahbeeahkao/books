@@ -1,7 +1,7 @@
 import { Doc } from 'fyo/model/doc';
 import { HiddenMap, ListsMap } from 'fyo/model/types';
 import { ValidationError } from 'fyo/utils/errors';
-import { ModelNameEnum } from 'models/types';
+import { getCustomizableSchemas } from 'src/utils/customForm';
 import { Field } from 'schemas/types';
 import { getMapFromList } from 'utils/index';
 import { CustomField } from './CustomField';
@@ -24,29 +24,7 @@ export class CustomForm extends Doc {
   }
 
   static lists: ListsMap = {
-    name: (doc) =>
-      Object.values(doc?.fyo.schemaMap ?? {})
-        .filter((s) => {
-          if (!s || !s.label || !s.name) {
-            return false;
-          }
-
-          if (s.isSingle) {
-            return false;
-          }
-
-          return ![
-            ModelNameEnum.PatchRun,
-            ModelNameEnum.SingleValue,
-            ModelNameEnum.CustomField,
-            ModelNameEnum.CustomForm,
-            ModelNameEnum.SetupWizard,
-          ].includes(s.name as ModelNameEnum);
-        })
-        .map((s) => ({
-          value: s!.name,
-          label: s!.label,
-        })),
+    name: (doc) => getCustomizableSchemas(doc?.fyo.schemaMap ?? {}),
   };
 
   hidden: HiddenMap = { customFields: () => !this.name };

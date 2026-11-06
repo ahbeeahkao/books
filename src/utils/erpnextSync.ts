@@ -11,6 +11,10 @@ import { getRandomString } from '../../utils';
 import { ValidationError } from 'fyo/utils/errors';
 import { PricingRule } from 'models/baseModels/PricingRule/PricingRule';
 import { PricingRuleItem } from 'models/baseModels/PricingRuleItem/PricingRuleItem';
+import {
+  getUomConversionValidationIssue,
+  getUomWholeNumberFlag,
+} from 'src/utils/uom';
 
 export async function registerInstanceToERPNext(fyo: Fyo) {
   if (!navigator.onLine) {
@@ -317,12 +321,25 @@ async function appendDocValues(newDoc: DocValueMap, doc: DocValueMap) {
         break;
       }
 
-      for (const uomDoc of doc.uomConversions as DocValueMap[]) {
-        if (!uomDoc.uom || !uomDoc.conversionFactor) {
+      const rows = doc.uomConversions as DocValueMap[];
+      const issue = getUomConversionValidationIssue(rows);
+      if (issue) {
+        if (issue.type === 'missing-uom') {
+          throw new ValidationError(`Invalid UOM conversion data: missing uom`);
+        }
+
+        if (issue.type === 'duplicate') {
           throw new ValidationError(
-            `Invalid UOM conversion data: missing uom or conversionFactor`
+            `Each unit can have only one conversion factor.`
           );
         }
+
+        throw new ValidationError(
+          `Conversion factors must be greater than zero.`
+        );
+      }
+
+      for (const uomDoc of rows) {
         await (newDoc as Doc).append('uomConversions', {
           uom: uomDoc.uom,
           conversionFactor: uomDoc.conversionFactor,
@@ -459,7 +476,7 @@ async function performPreSync(fyo: Fyo, doc: DocValueMap) {
           if (!isUnitExists) {
             const data = {
               name: row.uom,
-              isWhole: row.isWhole,
+              isWhole: getUomWholeNumberFlag(row),
             };
 
             await fyo.doc.getNewDoc(ModelNameEnum.UOM, data).sync();

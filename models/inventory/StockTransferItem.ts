@@ -10,6 +10,10 @@ import { ValidationError } from 'fyo/utils/errors';
 import { ModelNameEnum } from 'models/types';
 import { Money } from 'pesa';
 import { safeParseFloat } from 'utils/index';
+import {
+  assertWholeNumberQuantity,
+  assertWholeNumberQuantityForUnit,
+} from 'src/utils/uom';
 import { StockTransfer } from './StockTransfer';
 import { TransferItem } from './TransferItem';
 import { SalesInvoice } from 'models/baseModels/SalesInvoice/SalesInvoice';
@@ -125,16 +129,10 @@ export class StockTransferItem extends TransferItem {
       dependsOn: ['item', 'quantity'],
     },
     quantity: {
-      formula: async (fieldname) => {
+      formula: (fieldname) => {
         if (!this.item) {
           return this.quantity as number;
         }
-
-        const itemDoc = await this.fyo.doc.getDoc(
-          ModelNameEnum.Item,
-          this.item
-        );
-        const unitDoc = itemDoc.getLink('uom');
 
         let quantity: number = this.quantity ?? 1;
 
@@ -150,10 +148,6 @@ export class StockTransferItem extends TransferItem {
           quantity = this.transferQuantity! * this.unitConversionFactor!;
         }
 
-        if (unitDoc?.isWhole) {
-          return Math.round(quantity);
-        }
-
         return safeParseFloat(quantity);
       },
       dependsOn: [
@@ -162,6 +156,7 @@ export class StockTransferItem extends TransferItem {
         'transferUnit',
         'unitConversionFactor',
         'isReturn',
+        'item',
       ],
     },
     unitConversionFactor: {
@@ -324,6 +319,16 @@ export class StockTransferItem extends TransferItem {
   };
 
   validations: ValidationMap = {
+    quantity: async (value: DocValue) => {
+      await assertWholeNumberQuantity(this.fyo, this.item, value);
+    },
+    transferQuantity: async (value: DocValue) => {
+      await assertWholeNumberQuantityForUnit(
+        this.fyo,
+        this.transferUnit ?? this.unit,
+        value
+      );
+    },
     transferUnit: async (value: DocValue) => {
       if (!this.item) {
         return;

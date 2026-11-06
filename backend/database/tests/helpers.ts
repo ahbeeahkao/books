@@ -5,6 +5,7 @@ import {
   cleanSchemas,
   getAbstractCombinedSchemas,
 } from '../../../schemas';
+import Misc from '../../../schemas/app/Misc.json';
 import SingleValue from '../../../schemas/core/SingleValue.json';
 import { SchemaMap, SchemaStub, SchemaStubMap } from '../../../schemas/types';
 
@@ -118,6 +119,119 @@ const SalesInvoice = {
   ],
 };
 
+const POSSettings = {
+  name: 'POSSettings',
+  label: 'POS Settings',
+  isSingle: true,
+  isChild: false,
+  fields: [
+    {
+      fieldname: 'weightEnabledBarcode',
+      label: 'Weight Enabled Barcode',
+      fieldtype: 'Check',
+      default: false,
+    },
+    {
+      fieldname: 'checkDigits',
+      label: 'Check Digits',
+      fieldtype: 'Int',
+      default: 0,
+    },
+    {
+      fieldname: 'itemCodeDigits',
+      label: 'Item Code Digits',
+      fieldtype: 'Int',
+      default: 0,
+    },
+    {
+      fieldname: 'itemWeightDigits',
+      label: 'Item Weight Digits',
+      fieldtype: 'Int',
+      default: 0,
+    },
+  ],
+};
+
+const UOM = {
+  name: 'UOM',
+  label: 'UOM',
+  isSingle: false,
+  isChild: false,
+  fields: [
+    {
+      fieldname: 'name',
+      label: 'Name',
+      fieldtype: 'Data',
+      required: true,
+    },
+  ],
+};
+
+const Item = {
+  name: 'Item',
+  label: 'Item',
+  isSingle: false,
+  isChild: false,
+  fields: [
+    {
+      fieldname: 'name',
+      label: 'Item Name',
+      fieldtype: 'Data',
+      required: true,
+    },
+    {
+      fieldname: 'barcode',
+      label: 'Barcode',
+      fieldtype: 'Data',
+    },
+    {
+      fieldname: 'unit',
+      label: 'Unit Type',
+      fieldtype: 'Link',
+      target: 'UOM',
+    },
+    {
+      fieldname: 'barcodes',
+      label: 'Barcodes',
+      fieldtype: 'Table',
+      target: 'ItemBarcode',
+    },
+  ],
+};
+
+const ItemBarcode = {
+  name: 'ItemBarcode',
+  label: 'Item Barcode',
+  isChild: true,
+  fields: [
+    {
+      fieldname: 'barcode',
+      label: 'Barcode',
+      fieldtype: 'Data',
+      required: true,
+    },
+    {
+      fieldname: 'barcodeType',
+      label: 'Barcode Type',
+      fieldtype: 'Select',
+      default: 'Custom',
+      options: [
+        { value: 'EAN', label: 'EAN' },
+        { value: 'UPC', label: 'UPC' },
+        { value: 'Code 128', label: 'Code 128' },
+        { value: 'Custom', label: 'Custom' },
+      ],
+    },
+    {
+      fieldname: 'uom',
+      label: 'UOM',
+      fieldtype: 'Link',
+      target: 'UOM',
+    },
+  ],
+  tableFields: ['barcode', 'barcodeType', 'uom'],
+};
+
 const SystemSettings = {
   name: 'SystemSettings',
   label: 'System Settings',
@@ -152,7 +266,11 @@ const SystemSettings = {
   keywordFields: [],
 };
 
-export function getBuiltTestSchemaMap(): SchemaMap {
+export function getBuiltTestSchemaMap(
+  includeMisc = false,
+  includePOSSettings = false,
+  includeItemBarcodes = false
+): SchemaMap {
   const testSchemaMap: SchemaStubMap = {
     SingleValue: SingleValue as SchemaStub,
     Customer: Customer as SchemaStub,
@@ -160,6 +278,20 @@ export function getBuiltTestSchemaMap(): SchemaMap {
     SalesInvoiceItem: SalesInvoiceItem as SchemaStub,
     SystemSettings: SystemSettings as SchemaStub,
   };
+
+  if (includeMisc) {
+    testSchemaMap.Misc = Misc as SchemaStub;
+  }
+
+  if (includePOSSettings) {
+    testSchemaMap.POSSettings = POSSettings as SchemaStub;
+  }
+
+  if (includeItemBarcodes) {
+    testSchemaMap.UOM = UOM as SchemaStub;
+    testSchemaMap.Item = Item as SchemaStub;
+    testSchemaMap.ItemBarcode = ItemBarcode as SchemaStub;
+  }
 
   const schemaMapClone = cloneDeep(testSchemaMap);
   const abstractCombined = getAbstractCombinedSchemas(schemaMapClone);

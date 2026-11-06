@@ -88,7 +88,7 @@
                 @mousedown.prevent
                 @click="selectItem(d)"
               >
-                <component :is="d.component" v-if="d.component" />
+                <component :is="d.component as any" v-if="d.component" />
                 <template v-else>{{ d.label }}</template>
               </a>
             </div>
@@ -100,6 +100,7 @@
 </template>
 <script lang="ts">
 import { Doc } from 'fyo/model/doc';
+import type { Action } from 'fyo/model/types';
 import { Field } from 'schemas/types';
 import { fyo } from 'src/initFyo';
 import { DropdownItem } from 'src/utils/types';
@@ -190,9 +191,9 @@ export default defineComponent({
       }
 
       if (this.doc) {
-        await d.action(this.doc, this.$router);
+        await (d.action as Action['action'])(this.doc, this.$router);
       } else {
-        await d.action();
+        await (d.action as () => unknown)();
       }
 
       this.toggleDropdown(false);

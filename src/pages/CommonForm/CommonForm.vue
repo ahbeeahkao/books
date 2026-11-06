@@ -1,13 +1,17 @@
 <template>
   <FormContainer :use-full-width="useFullWidth">
     <template v-if="hasDoc" #header-left>
-      <Barcode
-        v-if="canShowBarcode"
+      <WeightEnabledBarcode
+        v-if="canShowWeightBarcode"
         class="h-8"
-        @item-selected="(name:string) => {
-          // @ts-ignore
-          doc?.addItem(name);
-        }"
+        :unit="configuredUnit"
+        @item-selected="addItemFromScan"
+      />
+      <Barcode
+        v-else-if="canShowBarcode"
+        class="h-8"
+        :unit="configuredUnit"
+        @item-selected="addItemFromScan"
       />
       <ExchangeRate
         v-if="canShowExchangeRate"
@@ -164,8 +168,8 @@
           :doc="doc"
           :fieldname="row.fieldname"
           :index="row.index"
-          @previous="(i:number) => row!.index = i"
-          @next="(i:number) => row!.index = i"
+          @previous="(i: number) => (row!.index = i)"
+          @next="(i: number) => (row!.index = i)"
           @close="() => (row = null)"
         />
       </Transition>
@@ -182,6 +186,7 @@ import { ModelNameEnum } from 'models/types';
 import { Field, Schema } from 'schemas/types';
 import Button from 'src/components/Button.vue';
 import Barcode from 'src/components/Controls/Barcode.vue';
+import WeightEnabledBarcode from 'src/components/Controls/WeightEnabledBarcode.vue';
 import ExchangeRate from 'src/components/Controls/ExchangeRate.vue';
 import DropdownWithActions from 'src/components/DropdownWithActions.vue';
 import FormContainer from 'src/components/FormContainer.vue';
@@ -216,6 +221,7 @@ export default defineComponent({
     Button,
     DropdownWithActions,
     Barcode,
+    WeightEnabledBarcode,
     ExchangeRate,
     LinkedEntries,
     RowEditForm,
@@ -280,6 +286,16 @@ export default defineComponent({
 
       // @ts-ignore
       return typeof this.doc?.addItem === 'function';
+    },
+    canShowWeightBarcode(): boolean {
+      return (
+        this.canShowBarcode &&
+        !!this.fyo.singles.POSSettings?.weightEnabledBarcode
+      );
+    },
+    configuredUnit(): string | undefined {
+      const unit = (this.docOrNull as { unit?: unknown } | null)?.unit;
+      return typeof unit === 'string' && unit.trim() ? unit.trim() : undefined;
     },
     canShowExchangeRate(): boolean {
       return this.hasDoc && !!this.doc.isMultiCurrency;
@@ -421,6 +437,10 @@ export default defineComponent({
     this.row = null;
   },
   methods: {
+    addItemFromScan(name: string, quantity: number) {
+      // @ts-ignore
+      this.docOrNull?.addItem(name, quantity);
+    },
     routeTo,
     async toggleWidth() {
       const value = !this.useFullWidth;

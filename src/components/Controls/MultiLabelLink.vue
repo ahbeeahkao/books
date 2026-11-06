@@ -76,6 +76,7 @@ export default {
         ...new Set([
           'name',
           this.secondaryLink,
+          this.thirdLink,
           schema.titleField,
           this.df.groupBy,
         ]),
@@ -86,23 +87,85 @@ export default {
         fields,
       });
 
-      return (this.results = results
-        .map((r) => {
-          const option = {
-            label:
-              r[this.secondaryLink] && this.showSecondaryLink
-                ? `${r[schema.titleField]}  ` + `  ${r[this.secondaryLink]}`
-                : r[schema.titleField],
-            value: r.name,
-            value2: r[this.secondaryLink],
-          };
+      const childBarcodes = await this.getChildBarcodeRows(schemaName);
+      const options = results.map((r) => this.getOption(r, schema));
 
-          if (this.df.groupBy) {
-            option.group = r[this.df.groupBy];
-          }
-          return option;
-        })
-        .filter(Boolean));
+      for (const child of childBarcodes) {
+        const parent = child.parent;
+        const barcode = child.barcode;
+        if (!parent || !barcode) {
+          continue;
+        }
+
+        const row = results.find((r) => r.name === parent);
+        if (!row) {
+          continue;
+        }
+
+        options.push(this.getOption(row, schema, barcode));
+      }
+
+      return (this.results = this.dedupeOptions(options));
+    },
+    async getChildBarcodeRows(schemaName) {
+      if (
+        schemaName !== 'Item' ||
+        this.secondaryLink !== 'barcode' ||
+        !fyo.schemaMap.ItemBarcode
+      ) {
+        return [];
+      }
+
+      try {
+        return await fyo.db.getAll('ItemBarcode', {
+          fields: ['parent', 'barcode'],
+        });
+      } catch {
+        return [];
+      }
+    },
+    getOption(r, schema, barcodeOverride) {
+      const secondary = barcodeOverride ?? r[this.secondaryLink];
+      const third = r[this.thirdLink];
+      const extras = [];
+
+      if (
+        secondary &&
+        (this.showSecondaryLink || barcodeOverride !== undefined)
+      ) {
+        extras.push(secondary);
+      }
+
+      if (third) {
+        extras.push(third);
+      }
+
+      const title = r[schema.titleField];
+      const label = extras.length ? `${title}  ${extras.join('  ')}` : title;
+      const option = {
+        label,
+        value: r.name,
+        value2: secondary,
+        value3: third,
+      };
+
+      if (this.df.groupBy) {
+        option.group = r[this.df.groupBy];
+      }
+
+      return option;
+    },
+    dedupeOptions(options) {
+      const seen = new Set();
+      return options.filter((option) => {
+        const key = `${option.value}|${option.label}`;
+        if (seen.has(key)) {
+          return false;
+        }
+
+        seen.add(key);
+        return true;
+      });
     },
     async getSuggestions(keyword = '') {
       let options = await this.getOptions();

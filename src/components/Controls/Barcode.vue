@@ -19,7 +19,7 @@
       ref="scanner"
       type="text"
       class="text-base placeholder-gray-600 w-full bg-transparent outline-none"
-      :placeholder="t`Enter barcode`"
+      :placeholder="inputPlaceholder"
       @change="handleChange"
     />
     <feather-icon
@@ -31,10 +31,23 @@
 </template>
 
 <script lang="ts">
+import {
+  getBarcodeSettings,
+  getMissingWeightBarcodeFields,
+  getScannedItem,
+  isBarcodeValue,
+  WeightBarcodeField,
+} from 'src/utils/barcodes';
 import { showToast } from 'src/utils/interactive';
 import { defineComponent } from 'vue';
+
 export default defineComponent({
+  name: 'Barcode',
   emits: ['item-selected'],
+  props: {
+    placeholder: { type: String, default: '' },
+    unit: { type: String, default: '' },
+  },
   data() {
     return {
       timerId: null,
@@ -45,6 +58,11 @@ export default defineComponent({
       barcode: string;
       cooldown: string;
     };
+  },
+  computed: {
+    inputPlaceholder(): string {
+      return this.placeholder || this.t`Enter barcode`;
+    },
   },
   mounted() {
     document.addEventListener('keydown', this.scanListener);
@@ -61,12 +79,31 @@ export default defineComponent({
   methods: {
     handleChange(e: Event) {
       const elem = e.target as HTMLInputElement;
-      this.selectItem(elem.value);
+      void this.selectItem(elem.value);
       elem.value = '';
+    },
+    showMissingBarcodeSettings(): boolean {
+      const missing = getMissingWeightBarcodeFields(
+        getBarcodeSettings(this.fyo)
+      );
+      if (!missing.length) {
+        return false;
+      }
+
+      const labels: Record<WeightBarcodeField, string> = {
+        checkDigits: this.t`Check Digits`,
+        itemCodeDigits: this.t`Item Code Digits`,
+        itemWeightDigits: this.t`Item Weight Digits`,
+      };
+      const fields = missing.map((field) => labels[field]).join(', ');
+      this.error(
+        this.t`Configure ${fields} in POS Settings to scan weight barcodes.`
+      );
+      return true;
     },
     async selectItem(code: string) {
       const barcode = code.trim();
-      if (!/^[A-Za-z0-9]{12,}$/.test(barcode)) {
+      if (!isBarcodeValue(barcode)) {
         return this.error(this.t`Invalid barcode value ${barcode}.`);
       }
 
@@ -81,21 +118,25 @@ export default defineComponent({
       this.cooldown = barcode;
       setTimeout(() => (this.cooldown = ''), 100);
 
-      const items = (await this.fyo.db.getAll('Item', {
-        filters: { barcode },
-        fields: ['name'],
-      })) as { name: string }[];
+      const scanned = await getScannedItem(
+        this.fyo,
+        barcode,
+        undefined,
+        this.unit || undefined
+      );
+      if (!scanned) {
+        if (this.showMissingBarcodeSettings()) {
+          return;
+        }
 
-      const name = items?.[0]?.name;
-
-      if (!name) {
         return this.error(this.t`Item with barcode ${barcode} not found.`);
       }
 
-      this.success(this.t`${name} quantity 1 added.`);
-      this.$emit('item-selected', name);
+      const { item, quantity } = scanned;
+      this.success(this.t`${item.name} quantity ${quantity} added.`);
+      this.$emit('item-selected', item.name, quantity);
     },
-    async scanListener({ key, code }: KeyboardEvent) {
+    async scanListener({ key, code, target }: KeyboardEvent) {
       /**
        * Based under the assumption that
        * - Barcode scanners trigger keydown events
@@ -104,10 +145,12 @@ export default defineComponent({
        * - Keydown events are triggered for barcode digits
        * - The sequence of digits might be punctuated by a return
        */
-
-      const keyCode = Number(key);
       const isEnter = code === 'Enter';
-      if (Number.isNaN(keyCode) && !isEnter) {
+      if (!isEnter && this.isTypingTarget(target)) {
+        return;
+      }
+
+      if (!isEnter && (key.length !== 1 || /\s/.test(key))) {
         return;
       }
 
@@ -123,8 +166,18 @@ export default defineComponent({
         this.barcode = '';
       }, 20);
     },
+    isTypingTarget(target: EventTarget | null): boolean {
+      if (!(target instanceof HTMLElement)) {
+        return false;
+      }
+
+      return (
+        ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
+        target.isContentEditable
+      );
+    },
     async setItemFromBarcode() {
-      if (this.barcode.length < 12) {
+      if (!this.barcode.trim()) {
         return;
       }
 

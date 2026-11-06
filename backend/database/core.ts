@@ -395,28 +395,102 @@ export default class DatabaseCore extends DatabaseBase {
     return false;
   }
 
-  async #dropColumns(schemaName: string, targetColumns: string[]) {
-    await this.knex!.schema.table(schemaName, (table) => {
-      table.dropColumns(...targetColumns);
-    });
+  #getMissingFieldFallback(field: Field): RawValue | undefined {
+    /**
+     * A legacy row can be missing a column that the current schema marks as
+     * required. Rebuilding the table would then fail with a NOT NULL constraint
+     * when the undefined value is copied into the temp table. Prefer the schema
+     * default, then a type-safe fallback for required fields.
+     */
+    if (field.default !== undefined) {
+      return field.default;
+    }
+
+    if (!field.required) {
+      return undefined;
+    }
+
+    switch (field.fieldtype) {
+      case FieldTypeEnum.Int:
+      case FieldTypeEnum.Float:
+      case FieldTypeEnum.Currency:
+        return 0;
+      case FieldTypeEnum.Check:
+        return false;
+      case FieldTypeEnum.Datetime:
+        return new Date().toISOString();
+      default:
+        return '';
+    }
   }
 
   async prestigeTheTable(schemaName: string, tableRows: FieldValueMap[]) {
-    // Alter table hacx for sqlite in case of schema change.
+    /**
+     * SQLite cannot safely drop columns or add foreign keys while foreign key
+     * enforcement is on. Rebuild the table from the current schema instead.
+     */
     const tempName = `__${schemaName}`;
+    const fields = this.schemaMap[schemaName]!.fields.filter(
+      (field) =>
+        !field.computed &&
+        field.fieldtype !== FieldTypeEnum.Table &&
+        !!this.typeMap[field.fieldtype]
+    );
 
-    // Create replacement table
-    await this.knex!.schema.dropTableIfExists(tempName);
-    await this.knex!.raw('PRAGMA foreign_keys=OFF');
-    await this.#createTable(schemaName, tempName);
+    const rows = tableRows.map((row) => {
+      const next: FieldValueMap = {};
+      for (const field of fields) {
+        const fieldname = field.fieldname;
+        const value = row[fieldname];
 
-    // Insert rows from source table into the replacement table
-    await this.knex!.batchInsert(tempName, tableRows, 200);
+        if (value !== undefined) {
+          next[fieldname] = value;
+          continue;
+        }
 
-    // Replace with the replacement table
-    await this.knex!.schema.dropTable(schemaName);
-    await this.knex!.schema.renameTable(tempName, schemaName);
-    await this.knex!.raw('PRAGMA foreign_keys=ON');
+        const fallback = this.#getMissingFieldFallback(field);
+        next[fieldname] = fallback;
+      }
+
+      return next;
+    });
+
+    const pragma = (await this.knex!.raw('PRAGMA foreign_keys')) as
+      | { foreign_keys?: number }[]
+      | undefined;
+    const wasEnabled = Number(pragma?.[0]?.foreign_keys ?? 1) === 1;
+
+    if (wasEnabled) {
+      await this.knex!.raw('PRAGMA foreign_keys=OFF');
+    }
+
+    try {
+      await this.knex!.schema.dropTableIfExists(tempName);
+      await this.#createTable(schemaName, tempName);
+
+      if (rows.length) {
+        await this.knex!.batchInsert(tempName, rows, 200);
+      }
+
+      await this.knex!.schema.dropTable(schemaName);
+      await this.knex!.schema.renameTable(tempName, schemaName);
+    } finally {
+      if (wasEnabled) {
+        await this.knex!.raw('PRAGMA foreign_keys=ON');
+      }
+    }
+
+    if (wasEnabled) {
+      const violations = (await this.knex!.raw(
+        'PRAGMA foreign_key_check'
+      )) as unknown[];
+
+      if (violations.length) {
+        throw new Error(
+          `foreign key check failed after rebuilding ${schemaName}`
+        );
+      }
+    }
   }
 
   async #getTableColumns(schemaName: string): Promise<string[]> {
@@ -641,23 +715,25 @@ export default class DatabaseCore extends DatabaseBase {
   }
 
   async #alterTable({ schemaName, diff, newForeignKeys }: AlterConfig) {
-    await this.knex!.schema.table(schemaName, (table) => {
-      if (!diff.added.length) {
-        return;
-      }
+    /**
+     * Removing columns or adding foreign keys requires a full rebuild. Plain
+     * `ALTER TABLE` cannot do either safely with `PRAGMA foreign_keys=ON`.
+     */
+    if (diff.removed.length || newForeignKeys.length) {
+      const tableRows = await this.knex!.select().from(schemaName);
+      await this.prestigeTheTable(schemaName, tableRows);
+      return;
+    }
 
+    if (!diff.added.length) {
+      return;
+    }
+
+    await this.knex!.schema.table(schemaName, (table) => {
       for (const field of diff.added) {
         this.#buildColumnForTable(table, field);
       }
     });
-
-    if (diff.removed.length) {
-      await this.#dropColumns(schemaName, diff.removed);
-    }
-
-    if (newForeignKeys.length) {
-      await this.#addForeignKeys(schemaName);
-    }
   }
 
   async #createTable(schemaName: string, tableName?: string) {
@@ -736,11 +812,6 @@ export default class DatabaseCore extends DatabaseBase {
     child.parentSchemaName = parentSchemaName;
     child.parentFieldname = field.fieldname;
     child.idx ??= idx;
-  }
-
-  async #addForeignKeys(schemaName: string) {
-    const tableRows = await this.knex!.select().from(schemaName);
-    await this.prestigeTheTable(schemaName, tableRows);
   }
 
   async #loadChildren(

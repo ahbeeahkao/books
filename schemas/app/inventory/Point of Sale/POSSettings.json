@@ -97,6 +97,13 @@
       "section": "Barcode"
     },
     {
+      "fieldname": "itemWeightDigits",
+      "label": "Item Weight Digits",
+      "fieldtype": "Int",
+      "default": 0,
+      "section": "Barcode"
+    },
+    {
       "fieldname": "itemVisibility",
       "label": "Item Visibility",
       "fieldtype": "Select",

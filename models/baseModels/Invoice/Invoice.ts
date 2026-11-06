@@ -1773,8 +1773,8 @@ export abstract class Invoice extends Transactional {
       .sort((a, b) => a.date.valueOf() - b.date.valueOf());
   }
 
-  async addItem(name: string) {
-    return await addItem(name, this);
+  async addItem(name: string, quantity = 1) {
+    return await addItem(name, this, quantity);
   }
 
   async appendPricingRuleDetail(
