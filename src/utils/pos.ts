@@ -11,6 +11,10 @@ import { ItemQtyMap, ItemSerialNumbers } from 'src/components/POS/types';
 import { fyo } from 'src/initFyo';
 import { safeParseFloat } from 'utils/index';
 import { showToast } from './interactive';
+import {
+  assertWholeNumberQuantity,
+  assertWholeNumberQuantityForUnit,
+} from './uom';
 import { POSClosingShift } from 'models/inventory/Point of Sale/POSClosingShift';
 
 export async function getPOSOpeningShiftDoc(
@@ -101,6 +105,13 @@ async function validateSinvItems(
   isReturn?: string
 ) {
   for (const item of sinvItems) {
+    await assertWholeNumberQuantity(fyo, item.item, item.quantity);
+    await assertWholeNumberQuantityForUnit(
+      fyo,
+      item.transferUnit ?? item.unit,
+      item.transferQuantity
+    );
+
     const trackItem = await fyo.getValue(
       ModelNameEnum.Item,
       item.item as string,

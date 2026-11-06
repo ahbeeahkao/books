@@ -46,6 +46,7 @@ export default defineComponent({
   emits: ['item-selected'],
   props: {
     placeholder: { type: String, default: '' },
+    unit: { type: String, default: '' },
   },
   data() {
     return {
@@ -117,7 +118,12 @@ export default defineComponent({
       this.cooldown = barcode;
       setTimeout(() => (this.cooldown = ''), 100);
 
-      const scanned = await getScannedItem(this.fyo, barcode);
+      const scanned = await getScannedItem(
+        this.fyo,
+        barcode,
+        undefined,
+        this.unit || undefined
+      );
       if (!scanned) {
         if (this.showMissingBarcodeSettings()) {
           return;

@@ -1,5 +1,12 @@
 import type { Fyo } from 'fyo';
 import { ModelNameEnum } from 'models/types';
+import {
+  getConfiguredUomFactor,
+  getUomConversionFactorMap,
+  getUomWeightConversionFactor,
+  getUomWholeNumberFlag,
+} from 'src/utils/uom';
+import type { UomDetails } from 'src/utils/uom';
 
 /**
  * Shared barcode scanning logic.
@@ -33,13 +40,11 @@ export type BarcodeItem = {
   unit?: string | null;
   barcodes: string[];
   barcodeUnits?: Record<string, string | null>;
+  uomDetails?: Record<string, BarcodeUnit>;
+  conversionFactors?: Record<string, number>;
 };
 
-export type BarcodeUnit = {
-  name?: string | null;
-  isWhole?: boolean;
-  conversionFactor?: number;
-};
+export type BarcodeUnit = UomDetails;
 
 export type ScannedItem<T extends BarcodeItem = BarcodeItem> = {
   item: T;
@@ -76,6 +81,19 @@ interface BarcodeChildRow {
   parent?: unknown;
   barcode?: unknown;
   uom?: unknown;
+}
+
+interface UomDatabaseRow {
+  name?: unknown;
+  isWhole?: unknown;
+  mustBeWholeNumber?: unknown;
+  must_be_whole_number?: unknown;
+}
+
+interface UomConversionDatabaseRow {
+  parent?: unknown;
+  uom?: unknown;
+  conversionFactor?: unknown;
 }
 
 export function asBarcodeString(value: unknown): string | null {
@@ -188,18 +206,13 @@ export function parseWeightBarcode(
 
 export function getWeightBarcodeQuantity(
   weight: WeightBarcode,
-  unit?: BarcodeUnit | string | null
+  unit?: BarcodeUnit | string | null,
+  conversionFactors?: Record<string, number>
 ): number {
-  const unitName = typeof unit === 'string' ? unit : unit?.name ?? '';
-  const normalizedUnit = unitName.trim().toLocaleLowerCase();
-  const isWhole =
-    typeof unit === 'object' && unit !== null ? !!unit.isWhole : false;
+  const factor = getUomWeightConversionFactor(unit, conversionFactors);
+  const isWhole = getUomWholeNumberFlag(unit);
 
-  let quantity = weight.weightValue;
-  if (normalizedUnit === 'kg') {
-    quantity /= 1000;
-  }
-
+  let quantity = weight.weightValue * factor;
   if (isWhole) {
     quantity = Math.round(quantity);
   }
@@ -307,10 +320,41 @@ function findByWeightItemCode<T extends BarcodeItem>(
   );
 }
 
+function getResolvedBarcodeUnit<T extends BarcodeItem>(
+  item: T,
+  unitName?: string | null
+): BarcodeUnit | string | null {
+  const name = asBarcodeString(unitName);
+  if (!name) {
+    return null;
+  }
+
+  const normalized = name.toLocaleLowerCase();
+  let details: BarcodeUnit | undefined;
+  for (const [key, value] of Object.entries(item.uomDetails ?? {})) {
+    if (key.trim().toLocaleLowerCase() === normalized) {
+      details = value;
+      break;
+    }
+  }
+
+  const factor = getConfiguredUomFactor(item.conversionFactors, name);
+  if (!details && factor === undefined) {
+    return name;
+  }
+
+  return {
+    ...(details ?? {}),
+    name,
+    conversionFactor: details?.conversionFactor ?? factor,
+  };
+}
+
 export function findScannedItem<T extends BarcodeItem>(
   items: T[],
   code: string,
-  settings?: BarcodeSettings
+  settings?: BarcodeSettings,
+  unitOverride?: BarcodeUnit | string | null
 ): ScannedItem<T> | undefined {
   const scannedCode = code.trim();
   if (!scannedCode) {
@@ -332,13 +376,32 @@ export function findScannedItem<T extends BarcodeItem>(
     return { item: match.item, quantity: 1, isWeightBarcode: false };
   }
 
-  const unit = match.barcode
+  const override =
+    unitOverride && typeof unitOverride === 'object'
+      ? unitOverride
+      : asBarcodeString(unitOverride);
+
+  const unitName = override
+    ? typeof override === 'string'
+      ? override
+      : override.name
+    : match.barcode
     ? match.item.barcodeUnits?.[match.barcode] ?? match.item.unit
     : match.item.unit;
 
+  const unit = override
+    ? typeof override === 'string'
+      ? getResolvedBarcodeUnit(match.item, override)
+      : override
+    : getResolvedBarcodeUnit(match.item, asBarcodeString(unitName));
+
   return {
     item: match.item,
-    quantity: getWeightBarcodeQuantity(weight, unit),
+    quantity: getWeightBarcodeQuantity(
+      weight,
+      unit,
+      match.item.conversionFactors
+    ),
     isWeightBarcode: true,
   };
 }
@@ -357,10 +420,78 @@ async function getChildBarcodeRows(fyo: Fyo): Promise<BarcodeChildRow[]> {
   }
 }
 
+async function getUomRows(fyo: Fyo): Promise<UomDatabaseRow[]> {
+  if (!fyo.schemaMap?.[ModelNameEnum.UOM]) {
+    return [];
+  }
+
+  try {
+    return (await fyo.db.getAll(ModelNameEnum.UOM, {
+      fields: ['name', 'isWhole'],
+    })) as unknown as UomDatabaseRow[];
+  } catch {
+    return [];
+  }
+}
+
+async function getUomConversionRows(
+  fyo: Fyo
+): Promise<UomConversionDatabaseRow[]> {
+  if (!fyo.schemaMap?.[ModelNameEnum.UOMConversionItem]) {
+    return [];
+  }
+
+  try {
+    return (await fyo.db.getAll(ModelNameEnum.UOMConversionItem, {
+      fields: ['parent', 'uom', 'conversionFactor'],
+    })) as unknown as UomConversionDatabaseRow[];
+  } catch {
+    return [];
+  }
+}
+
 export async function getBarcodeRows(fyo: Fyo): Promise<BarcodeItem[]> {
   const itemRows = (await fyo.db.getAll(ModelNameEnum.Item, {
     fields: ['name', 'barcode', 'itemCode', 'unit'],
   })) as unknown as BarcodeDatabaseRow[];
+
+  const uomDetails = new Map<string, BarcodeUnit>();
+  for (const row of await getUomRows(fyo)) {
+    const name = asBarcodeString(row.name);
+    if (!name) {
+      continue;
+    }
+
+    const whole = getUomWholeNumberFlag({
+      name,
+      isWhole: row.isWhole as boolean | undefined,
+      mustBeWholeNumber: row.mustBeWholeNumber as boolean | undefined,
+      must_be_whole_number: row.must_be_whole_number as boolean | undefined,
+    });
+    uomDetails.set(name, {
+      name,
+      isWhole: whole,
+      mustBeWholeNumber: whole,
+    });
+  }
+
+  const conversionFactors = new Map<string, Record<string, number>>();
+  for (const row of await getUomConversionRows(fyo)) {
+    const parent = asBarcodeString(row.parent);
+    if (!parent) {
+      continue;
+    }
+
+    const factors = getUomConversionFactorMap([row]);
+    if (!Object.keys(factors).length) {
+      continue;
+    }
+
+    conversionFactors.set(parent, {
+      ...(conversionFactors.get(parent) ?? {}),
+      ...factors,
+    });
+  }
 
   const childBarcodes = new Map<string, string[]>();
   const barcodeUnits = new Map<string, Record<string, string | null>>();
@@ -396,6 +527,8 @@ export async function getBarcodeRows(fyo: Fyo): Promise<BarcodeItem[]> {
         unit: asBarcodeString(row.unit),
         barcodes: [...(childBarcodes.get(name) ?? [])],
         barcodeUnits: barcodeUnits.get(name),
+        uomDetails: Object.fromEntries(uomDetails),
+        conversionFactors: conversionFactors.get(name),
       },
     ];
   });
@@ -404,8 +537,14 @@ export async function getBarcodeRows(fyo: Fyo): Promise<BarcodeItem[]> {
 export async function getScannedItem(
   fyo: Fyo,
   code: string,
-  settings?: BarcodeSettings
+  settings?: BarcodeSettings,
+  unitOverride?: BarcodeUnit | string | null
 ): Promise<ScannedItem | undefined> {
   const barcodeSettings = settings ?? getBarcodeSettings(fyo);
-  return findScannedItem(await getBarcodeRows(fyo), code, barcodeSettings);
+  return findScannedItem(
+    await getBarcodeRows(fyo),
+    code,
+    barcodeSettings,
+    unitOverride
+  );
 }

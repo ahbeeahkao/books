@@ -89,6 +89,17 @@ Phase 1 CP2 results (the second proposed checkpoint; checkpoint order is not sep
 - ESLint: **0 errors, 0 warnings**; typecheck: **0 errors**; Prettier 2.4.1 on changed files: clean; build `--nopackage`: passed with only pre-existing Vite warnings.
 - CP3–CP5, FTS/scheduled jobs, and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction.
 
+Phase 1 CP3 results (the third proposed checkpoint; checkpoint order is not separately confirmed):
+
+- `src/utils/uom.ts` centralizes whole-number UOM flags and ERPNext `must_be_whole_number` mapping, positive/unique conversion validation, conversion-factor maps, the legacy `Kg` / `Gram` weight factors, whole-number quantity errors, feature-switch config, and shared assertions for both stock and transfer units. `UOM.json` keeps the `name` primary key and adds a hidden, read-only, computed `mustBeWholeNumber` parity alias; `models/baseModels/UOM/UOM.ts` derives it from `isWhole` and `models/index.ts` registers the model.
+- `UOMConversionItem.json` documents the positive-factor and one-row-per-UOM rules. `Item.json` documents the feature gate and replaces the invalid quick-edit `uom` field with `uomConversions`. `Item.ts` removes the old `beforeSync()` de-duplication/drop behaviour, rejects disabled-feature, blank, duplicate, and nonpositive conversion rows, adds the `RequiredMap`, and hides/requires `unit` and `uomConversions` according to `InventorySettings.enableUomConversions`.
+- `InvoiceItem`, `StockMovementItem`, and `StockTransferItem` no longer silently round fractional quantities in their quantity formulas. Their `quantity` and `transferQuantity` validations use the shared whole-number assertions, so both stock-UOM and transfer-UOM quantities are rejected instead of being coerced. `src/utils/pos.ts` applies the same checks in the POS sales-invoice validator. `src/utils/erpnextSync.ts` maps imported whole-number flags and validates conversion rows with the shared parity rules.
+- `src/utils/barcodes.ts` queries optional `UOM` / `UOMConversionItem` rows, resolves child-barcode and override UOM factors, and uses the shared whole-number and weight helpers. `Barcode.vue`, `WeightEnabledBarcode.vue`, and `CommonForm.vue` pass a form-level `unit` / `configuredUnit`; no `POSSettings` UOM field, visual redesign, new UOM manager, or sidebar root was added. Legacy `Kg` / `Gram` barcode quantities are preserved.
+- `tests/testUomParity.spec.ts` adds 68 assertions covering schema parity, the computed UOM alias, conversion validation, feature-gated hidden/required maps, `Item.validate()`, fractional stock and transfer quantities, transaction-row validators, configured weight UOMs, and scan resolution with UOM/conversion rows.
+- Full suite: **1167 / 1167 passing** across 30 spec files; combined targeted CP1/CP2/CP3 migration, barcode, and UOM specs: **147 / 147 passing**.
+- ESLint: **0 errors, 0 warnings**; typecheck: **0 errors**; Prettier 2.4.1 on changed files: clean; build `--nopackage`: passed with only pre-existing Vite warnings.
+- CP4–CP5, FTS/scheduled jobs, and the upstream real broken-`.db` P0 reports remain untouched; pass-3 synthetic coverage is still not a real-user reproduction.
+
 ## Fixes in pass 1
 
 ### P0: computed `status` filter leaked into SQL (upstream #1446)
@@ -198,4 +209,4 @@ Issue bodies to paste after reconnect:
 4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513).
 5. Keep Electron 22 upgrade (#1516) as separate platform hardening.
 6. Scope decisions are confirmed and `PHASE1_DESIGN.md` is written; review it before implementation.
-7. After review and confirmation of the proposed checkpoint order, begin Phase 1 CP1: `itemWeightDigits`, the shared barcode helper, and `tests/testBarcodes.spec.ts`; followed by multi-barcode/Item Barcode child table, UOM parity, POS stock validator, and custom-form storage decision — following the existing native desktop style and minimizing clicks.
+7. CP1 (`itemWeightDigits` and the shared barcode helper), CP2 (multi-barcode / Item Barcode child table), and CP3 (UOM parity) are implemented and verified above. CP4 (POS stock validator) and CP5 (custom-form storage decision) remain after checkpoint-order confirmation, following the existing native desktop style and minimizing clicks.

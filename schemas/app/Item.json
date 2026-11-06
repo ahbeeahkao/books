@@ -81,7 +81,8 @@
       "create": true,
       "default": "Unit",
       "section": "Details",
-      "placeholder": "Unit Type"
+      "placeholder": "Unit Type",
+      "description": "Stock UOM; shown and required when UOM conversions are enabled."
     },
     {
       "fieldname": "rate",
@@ -184,7 +185,8 @@
       "label": "UOM Conversions",
       "fieldtype": "Table",
       "target": "UOMConversionItem",
-      "section": "Inventory"
+      "section": "Inventory",
+      "description": "Positive conversion factors, one row per UOM."
     },
     {
       "fieldname": "datafromErp",
@@ -208,7 +210,7 @@
     "barcodes",
     "hsnCode",
     "trackItem",
-    "uom"
+    "uomConversions"
   ],
   "keywordFields": ["name", "itemType", "for"]
 }

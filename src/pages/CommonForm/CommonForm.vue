@@ -4,11 +4,13 @@
       <WeightEnabledBarcode
         v-if="canShowWeightBarcode"
         class="h-8"
+        :unit="configuredUnit"
         @item-selected="addItemFromScan"
       />
       <Barcode
         v-else-if="canShowBarcode"
         class="h-8"
+        :unit="configuredUnit"
         @item-selected="addItemFromScan"
       />
       <ExchangeRate
@@ -290,6 +292,10 @@ export default defineComponent({
         this.canShowBarcode &&
         !!this.fyo.singles.POSSettings?.weightEnabledBarcode
       );
+    },
+    configuredUnit(): string | undefined {
+      const unit = (this.docOrNull as { unit?: unknown } | null)?.unit;
+      return typeof unit === 'string' && unit.trim() ? unit.trim() : undefined;
     },
     canShowExchangeRate(): boolean {
       return this.hasDoc && !!this.doc.isMultiCurrency;

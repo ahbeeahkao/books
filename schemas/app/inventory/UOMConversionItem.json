@@ -9,14 +9,17 @@
       "fieldtype": "Link",
       "target": "UOM",
       "create": true,
-      "required": true
+      "required": true,
+      "description": "One conversion row per UOM for this item."
     },
     {
       "fieldname": "conversionFactor",
       "label": "Conversion Factor",
       "fieldtype": "Float",
       "default": 1,
-      "required": true
+      "required": true,
+      "minvalue": 0.000001,
+      "description": "Must be greater than zero and unique per item/UOM."
     }
   ],
   "tableFields": ["uom", "conversionFactor"]
