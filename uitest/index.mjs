@@ -37,15 +37,10 @@ const appSourcePath = path.join(root, 'dist_electron', 'build', 'main.js');
   await window.waitForLoadState('domcontentloaded');
   await window.waitForLoadState('load');
 
-  console.error('[uitest] url:', window.url());
-  console.error(
-    '[uitest] body:',
-    (await window.locator('body').innerHTML()).slice(0, 1000)
-  );
-
   test('load app', async (t) => {
     t.equal(await window.title(), 'Frappe Books', 'title matches');
-    t.ok(await window.locator('body').isVisible(), 'window has loaded');
+    await window.locator('#app').waitFor({ state: 'visible' });
+    t.ok(true, 'window has loaded');
   });
 
   test('navigate to database selector', async (t) => {
