@@ -310,3 +310,5 @@ Targeted result: **16 / 16 assertions passing**. Full tape suite: **1353 / 1353 
 ## CI native-module correction (2026-11-07)
 
 After checkpoint 5, GitHub Actions on macOS ARM64/Node `22.14.0` failed during `yarn` because the old `better-sqlite3` source could not compile against Node 22 V8 headers. The manifest and lock now use `better-sqlite3@13.0.3` (Node `>=22`, no install-time `node-gyp` script), with `node-addon-api@8.5.0` and an updated toolchain preflight. A direct SQLite probe and the full local gate set pass: **1353 / 1353 assertions** across **38 specs**. Packaged Electron-ABI rebuild and launch remain native-runner gates.
+
+CI also needed a committed tape setup (`scripts/testSetup.js`, `global-jsdom`, a `.vue` stub, and an `ipc` proxy) and an electron-builder 26 schema correction (`mac.notarize: false`; no removed `win.publisherName` or `win.signDlls`). The builder config was validated against the 26.18.0 schema and the platform preflight now guards those fields. No upstream issue is closed by these CI corrections.

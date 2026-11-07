@@ -1,9 +1,13 @@
-TEST_PATH=$@
+#!/usr/bin/env bash
+set -o pipefail
+export IS_TEST=true
 
-if [ $# -eq 0 ]
-  then
-    TEST_PATH=./**/tests/**/*.spec.ts
+if [ "$#" -gt 0 ]; then
+  specs=("$@")
+else
+  mapfile -t specs < <(
+    find . -path ./node_modules -prune -o -name '*.spec.ts' -print | sort
+  )
 fi
 
-export IS_TEST=true
-./scripts/runner.sh ./node_modules/.bin/tape $TEST_PATH | ./node_modules/.bin/tap-spec
+./scripts/runner.sh ./node_modules/.bin/tape "${specs[@]}" | ./node_modules/.bin/tap-spec

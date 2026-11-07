@@ -94,7 +94,23 @@ for (const entry of [
   }
 }
 
+const builderConfigSource = readFileSync(
+  new URL('electron-builder-config.mjs', root),
+  'utf8'
+);
 const mainSource = readFileSync(new URL('main.ts', root), 'utf8');
+if (!builderConfigSource.includes('notarize: false')) {
+  failures.push(
+    'electron-builder mac.notarize must be a boolean, not an object'
+  );
+}
+if (
+  builderConfigSource.includes('publisherName:') ||
+  builderConfigSource.includes('signDlls:')
+) {
+  failures.push('electron-builder win config uses fields removed in v26');
+}
+
 if (!mainSource.includes('shouldDisableChromiumSandbox')) {
   failures.push('main process is missing the Linux sandbox opt-in guard');
 }
