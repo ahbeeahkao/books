@@ -56,24 +56,38 @@ import { toggleSidebar } from 'src/utils/ui';
     <!-- Show Sidebar Button -->
     <button
       v-show="!showSidebar"
+      data-testid="show-sidebar"
       class="
         absolute
         bottom-0
         start-0
-        text-gray-600
-        dark:text-gray-400
-        hover:bg-gray-100
-        dark:hover:bg-gray-900
+        flex
+        items-center
+        gap-2
+        text-gray-700
+        dark:text-gray-200
+        bg-gray-100
+        dark:bg-gray-800
+        border border-gray-200
+        dark:border-gray-700
+        hover:bg-gray-200
+        dark:hover:bg-gray-700
         rounded
-        rtl-rotate-180
-        p-1
+        shadow-sm
+        p-2
         m-4
-        opacity-0
-        hover:opacity-100 hover:shadow-md
+        opacity-100
+        focus:outline-none focus:ring-2 focus:ring-blue-500
       "
+      :aria-label="t`Show Sidebar`"
+      :title="t`Show Sidebar`"
       @click="() => toggleSidebar()"
     >
-      <feather-icon name="chevrons-right" class="w-4 h-4" />
+      <feather-icon
+        name="chevrons-right"
+        class="w-4 h-4 flex-shrink-0 rtl-rotate-180"
+      />
+      <span class="text-sm font-medium">{{ t`Show Sidebar` }}</span>
     </button>
   </div>
 </template>

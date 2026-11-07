@@ -3,6 +3,7 @@ import { StockQueue } from 'models/inventory/stockQueue';
 import { ValuationMethod } from 'models/inventory/types';
 import { ModelNameEnum } from 'models/types';
 import { safeParseFloat, safeParseInt } from 'utils/index';
+import { sanitizeFiniteNumber } from '../../src/utils/stabilization';
 import type {
   ComputedStockLedgerEntry,
   RawStockLedgerEntry,
@@ -148,14 +149,14 @@ export function getStockLedgerEntries(
       continue;
     }
 
-    const balanceQuantity = q.quantity;
+    const balanceQuantity = sanitizeFiniteNumber(q.quantity);
     let valuationRate = q.fifo;
     if (valuationMethod === ValuationMethod.MovingAverage) {
-      valuationRate = q.movingAverage;
+      valuationRate = sanitizeFiniteNumber(q.movingAverage);
     }
 
-    const balanceValue = q.value;
-    const valueChange = balanceValue - initialValue;
+    const balanceValue = sanitizeFiniteNumber(q.value);
+    const valueChange = sanitizeFiniteNumber(balanceValue - initialValue);
 
     const csle: ComputedStockLedgerEntry = {
       name,
@@ -169,8 +170,8 @@ export function getStockLedgerEntries(
       quantity,
       balanceQuantity,
 
-      incomingRate,
-      valuationRate,
+      incomingRate: sanitizeFiniteNumber(incomingRate),
+      valuationRate: sanitizeFiniteNumber(valuationRate),
 
       balanceValue,
       valueChange,
@@ -305,27 +306,33 @@ function updateOpeningBalances(
   sbe: StockBalanceEntry,
   sle: ComputedStockLedgerEntry
 ) {
-  sbe.openingQuantity += sle.quantity;
-  sbe.openingValue += sle.valueChange;
+  const quantity = sanitizeFiniteNumber(sle.quantity);
+  const valueChange = sanitizeFiniteNumber(sle.valueChange);
 
-  sbe.balanceQuantity += sle.quantity;
-  sbe.balanceValue += sle.valueChange;
+  sbe.openingQuantity += quantity;
+  sbe.openingValue += valueChange;
+
+  sbe.balanceQuantity += quantity;
+  sbe.balanceValue += valueChange;
 }
 
 function updateCurrentBalances(
   sbe: StockBalanceEntry,
   sle: ComputedStockLedgerEntry
 ) {
-  sbe.balanceQuantity += sle.quantity;
-  sbe.balanceValue += sle.valueChange;
+  const quantity = sanitizeFiniteNumber(sle.quantity);
+  const valueChange = sanitizeFiniteNumber(sle.valueChange);
 
-  if (sle.quantity > 0) {
-    sbe.incomingQuantity += sle.quantity;
-    sbe.incomingValue += sle.valueChange;
+  sbe.balanceQuantity += quantity;
+  sbe.balanceValue += valueChange;
+
+  if (quantity > 0) {
+    sbe.incomingQuantity += quantity;
+    sbe.incomingValue += valueChange;
   } else {
-    sbe.outgoingQuantity -= sle.quantity;
-    sbe.outgoingValue -= sle.valueChange;
+    sbe.outgoingQuantity -= quantity;
+    sbe.outgoingValue -= valueChange;
   }
 
-  sbe.valuationRate = sle.valuationRate;
+  sbe.valuationRate = sanitizeFiniteNumber(sle.valuationRate);
 }

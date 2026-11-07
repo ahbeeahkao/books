@@ -1,11 +1,11 @@
 # Stabilization passes 1–3
 
-**Date:** 2026-11-04  
-**Branch:** `arena/a27de3bc-books`  
-**Original baseline:** `stabilization-baseline` at `8a4ae666b7805c641d66af53feeab16e00d23c9a`  
+**Date:** 2026-11-04
+**Branch:** `arena/a27de3bc-books`
+**Original baseline:** `stabilization-baseline` at `8a4ae666b7805c641d66af53feeab16e00d23c9a`
 **Checkpoint tags:** `stabilization-pass-1` (`69d9616`), `stabilization-pass-2` (`55b88df`), `stabilization-pass-3` (this pass)
 
-This is the pre-enhancement stabilization checkpoint for the archived Electron/Vue/SQLite Books fork. It is intentionally **not** a claim that every upstream P0/P1 issue is closed: only reproducible/code-confirmed blockers were fixed in these passes. Pass 3 adds synthetic broken-DB reproduction, which is **not** a real user `.db`. The Phase 1 design/impact note now lives in `PHASE1_DESIGN.md`; it is a design document only and no Phase 1 schema code has been written. FTS search index and scheduled jobs remain out of the enhancement scope, and no UI redesign was introduced.
+This is the pre-enhancement stabilization checkpoint for the archived Electron/Vue/SQLite Books fork. It is intentionally **not** a claim that every upstream P0/P1 issue is closed: only reproducible/code-confirmed blockers were fixed in these passes. Pass 3 adds synthetic broken-DB reproduction, which is **not** a real user `.db`. The Phase 1 design/impact note lives in `PHASE1_DESIGN.md`; the detailed upstream critical-issue backlog now lives in `UPSTREAM_CRITICAL_ISSUES.md`. FTS search index and scheduled jobs remain out of the enhancement scope, and no UI redesign was introduced.
 
 ## Scope decisions
 
@@ -34,7 +34,7 @@ A fifth planning assumption about Phase 1 ordering is **not** one of the four co
 
 Local environment: Node `v22.22.3`, Yarn `1.22.22`, npm `10.9.8`; README expects Node `20.18.1`. `yarn install --frozen-lockfile` repeatedly failed on the sandbox TLS handshake, so pass-2 verification used a **locked, exact-spec npm install** derived from `yarn.lock`: 61 direct specs plus their transitive tree, pinned to the same top-level versions (`typescript@4.6.2`, `vue@3.2.40`, `vue-tsc@1.6.5`, `@types/webpack-env@1.18.8`, `vue-router@4.0.12`). No `package-lock.json` was created. `yarn.lock` still parses to 1008 entries.
 
-`better-sqlite3@9.3.0` from the locked tree does **not** compile against Node 22.22.3 headers (V8 `AccessControl` / `PropertyAttribute` mismatch). For local verification only, `better-sqlite3@9.6.0` was installed with `--no-save --no-package-lock --ignore-scripts` and rebuilt with npm's bundled `node-gyp` against `/tmp/node-headers`; the repository dependency range was **not** changed. The direct-Node test runner also used local-only `global-jsdom@9.2.0` / `jsdom@23.2.0`, a `.vue` require stub, and a minimal `ipc.store` stub because Electron's binary is not downloaded and `scripts/runner.sh` needs zsh + Electron Node. `node_modules` and `dist_electron` are git-ignored.
+`better-sqlite3@9.3.0` from the original locked tree did **not** compile against Node 22 headers (V8 `AccessControl` / `PropertyAttribute` mismatch). The historical local-only verification used `better-sqlite3@9.6.0`; the fork manifest has since been upgraded to `better-sqlite3@13.0.3` after the same incompatibility failed in GitHub Actions. The direct-Node test runner also used local-only `global-jsdom@9.2.0` / `jsdom@23.2.0`, a `.vue` require stub, and a minimal `ipc.store` stub because Electron's binary is not downloaded and `scripts/runner.sh` needs zsh + Electron Node. `node_modules` and `dist_electron` are git-ignored.
 
 Verification commands used in passes 2–3:
 
@@ -201,7 +201,7 @@ Issues are enabled on `ahbeeahkao/books`. Labels `P0`, `P1`, `upstream`, `stabil
 X-Accepted-Github-Permissions: issues=write
 ```
 
-`gh issue list --repo ahbeeahkao/books --state all` remains `[]`. Reconnect GitHub in Arena or grant Issues write permission, then create the following six tracking issues.
+`gh issue list --repo ahbeeahkao/books --state all` remains `[]`. Until `issues=write` is available, use `UPSTREAM_CRITICAL_ISSUES.md` as the detailed local tracker for critical upstream parity work. Reconnect GitHub in Arena or grant Issues write permission, then create the following six tracking issues.
 
 | Title                                                                | Labels                                   | Upstream references                           | Status                                                                            |
 | -------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -223,10 +223,98 @@ Issue bodies to paste after reconnect:
 
 ## Remaining follow-up work
 
-1. Reconnect GitHub with `issues=write` and create the six tracking issues above.
+1. GitHub issue creation is still blocked by missing `issues=write`; track critical upstream parity work in `UPSTREAM_CRITICAL_ISSUES.md` and create the six tracking issues when permissions allow.
 2. Optional: obtain a real broken company `.db` to confirm #1536 / #1546 / #1351 / #1291 end-to-end. Pass 3 already added synthetic reproduction; this is no longer a hard gate for Phase 1.
 3. Obtain concrete accounting/inventory data to reproduce the P1 list before changing tax or stock logic.
-4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513).
-5. Keep Electron 22 upgrade (#1516) as separate platform hardening.
+4. Decide the fork version/release policy (#1515) and verify ARM64 packaging (#1513) with the checkpoint-3 manual CI gate.
+5. Checkpoint 3 upgraded Electron to `45.2.3`; packaged Linux/ARM64 launch outputs remain the gate for #1516.
 6. Scope decisions are confirmed and `PHASE1_DESIGN.md` records the CP1–CP5 decisions and outcomes.
-7. CP1–CP5 are implemented and verified above. The PR is created as the final step; no FTS/scheduled jobs, real broken-`.db` P0 changes, visual redesign, or extra POS click were included.
+7. CP1–CP5 are implemented and verified above, and PR #1 is merged as `f7b0f81`. Before new features, close the P0/P1 items in `UPSTREAM_CRITICAL_ISSUES.md`; no FTS/scheduled jobs, visual redesign, or extra POS click were included in the merged work.
+
+## Pass 4 — critical upstream parity fixes (2026-11-06)
+
+Before the later real broken-`.db`, visual redesign, new sidebar roots, and extra POS-click phases, the code-resolvable P0–P2 items from `UPSTREAM_CRITICAL_ISSUES.md` were stabilized locally:
+
+- Added `src/utils/stabilization.ts` with UTF-8 BOM helpers, canonical export/import field keys, currency fraction/precision helpers, zero-decimal truncation, line-discount clamping, write-off ledger amounts, local-midnight date normalization, and UTC-safe fiscal date parts.
+- CSV export now emits an Excel-compatible UTF-8 BOM; `parseCSV()` strips BOMs; import/export use the same `Schema.fieldname` key format.
+- `Fyo#initializeMoneyMaker()` clamps display precision to the currency's minor-unit digits; invoice tax amounts are truncated for zero-decimal currencies.
+- Line-item discounts are absolute amounts clamped to the line amount, not per-unit multipliers that can create negative totals.
+- Payment write-off postings now settle the full receivable/payable and put the write-off on the correct debit/credit side; multi-reference validation no longer coerces an unset write-off to `0`.
+- Purchase Receipt stock-in-hand posting uses net item amount, excluding GST from inventory valuation.
+- Ledger posting dates are normalized to local midnight without timezone day drift; fiscal-year endpoints use stored UTC date parts.
+- ERPNext sync actions no longer call `ipc.reloadWindow()`; they surface success/error toasts and log failures.
+- The sidebar restore control is visible and labelled; the hide control is labelled too. This is a functional fix, not a redesign.
+- Added `scripts/checkToolchain.mjs` and `npm run check:toolchain` to fail clearly on unsupported Node, missing `yarn.lock`, a stray `package-lock.json`, or drifted pinned module versions.
+- Added `tests/testStabilizationPass4.spec.ts` with 30 assertions.
+
+Verification:
+
+- Targeted stabilization test: **30 / 30 passing**.
+- Full tape suite including the new spec: **1240 / 1240 passing** across **33 spec files**.
+- `vue-tsc --noEmit --pretty false`: **0 errors**.
+- `eslint . --ext ts,vue`: **0 errors, 0 warnings**.
+- `prettier --check` on changed files: clean.
+- `npm run check:toolchain`: passed.
+- `node build/scripts/build.mjs --nopackage`: exit 0 with the same pre-existing Vite dynamic-import/chunk-size warnings.
+- `git diff --check`: clean.
+
+Unresolved by design: real broken `.db` files, packaged Linux/ARM64 smoke-test outputs, release tags, packaged RPM removal verification, Flathub restoration, concrete customer-balance/COA/pricing-rule fixtures, and any visual redesign/new sidebar roots/extra POS clicks. These remain in `UPSTREAM_CRITICAL_ISSUES.md` with explicit gates.
+
+## Later phase — checkpoint 1 (2026-11-07)
+
+After PR #2 opened, the authorized later phase started with synthetic issue-step reproductions. Upstream attachment retrieval was attempted first; #819's `test.books.db.zip` redirects to `objects.githubusercontent.com`, which this sandbox cannot reach. The user authorized generated issue-step fixtures, explicitly labelled synthetic.
+
+`backend/database/tests/testSyntheticIssueStepDatabases.spec.ts` creates temporary SQLite company DBs and opens them through `DatabaseManager.connectToDatabase()`:
+
+- #1351: copied old DB with no `SalesInvoice` foreign keys and a legacy column migrates, restores the `party` FK, and preserves rows.
+- #1536: dangling required Link fails loudly with `foreign key check failed`, preserving the corrupt row and leaving no migration temp table.
+- #1291: newer missing columns from the post-update report are restored on all representative invoice/quote/purchase/receipt/shipment tables, with safe defaults and no FK violations.
+- #1546: `Misc.openCount` fails in a non-writable DB directory and succeeds in a writable copy.
+- Healthy cases assert `AccountingSettings.companyName`, no `Company` DocType, FK enforcement, `foreign_key_check`, `integrity_check`, and temp-table cleanup.
+
+Targeted result: **48 / 48 assertions passing**; `vue-tsc --noEmit --pretty false` is clean. Evidence and limitations are in `LATER_PHASE_EVIDENCE.md`. No binary `.db` is committed. These are not real user samples; no upstream issue is closed, and the real broken-`.db` gate remains open.
+
+## Later phase — checkpoint 2 (2026-11-07)
+
+Synthetic reconciliation fixtures were added for #1394, #1410, #1541, #842, #1431, and #1535. `src/utils/reconciliation.ts` contains deterministic ledger reconciliation, group opening balances, pricing-rule item candidates, and root-account recreation validation helpers. `src/utils/stabilization.ts` adds a finite-number guard.
+
+- #1394: report CSV/JSON export now reads Money-like `float` values and bounds non-finite numbers.
+- #1410: General Ledger now carries forward pre-range entries as an `Opening` row and uses them in running and closing balances. Grouped reports receive group-specific opening balances.
+- #1541: prior-fiscal-year date range and P&L total are reconciled against a `₹50,000` back-dated income fixture.
+- #842: `StockQueue` and Stock Balance helpers reject/bound `NaN` and `±Infinity`; this is a display guard, not a rewrite of underlying stock data.
+- #1431: a synthetic item/rule candidate list selects only the eligible sales item and never falls back to a wrong item.
+- #1535: an explicit root group can be recreated after setup while ordinary child accounts still require a parent.
+
+Targeted result: **29 / 29 assertions passing**. Full tape suite: **1317 / 1317 passing** across **35 spec files**. Typecheck, ESLint, Prettier, toolchain preflight, build, and diff check are clean. Evidence and limitations are in `LATER_PHASE_EVIDENCE.md`. Real customer CSVs, prior-year company DBs, large stock ledgers, pricing-rule data, and COA traces remain open gates.
+
+## Later phase — checkpoint 3 (2026-11-07)
+
+Platform dependencies were upgraded to Electron `45.2.3`, electron-builder `26.18.0`, `@electron/rebuild` `4.2.1`, and electron-updater `6.8.11`. Node `22.12+` is now required and active workflows use `22.14.0`. The Linux AppImage target now includes ARM64, native rebuilds are enabled, and a manual native-runner CI workflow packages x64/ARM64 artifacts, checks unpacked ELF `.node` architecture, and launches under Xvfb.
+
+`scripts/checkNativeArchitecture.mjs` and `scripts/checkPlatformPolicy.mjs` are new static/runtime gates. `LINUX_SANDBOX.md` documents Ubuntu 24.04 user-namespace fixes and a Linux-only `BOOKS_DISABLE_CHROMIUM_SANDBOX` fallback; the main process keeps the Chromium sandbox enabled by default.
+
+Targeted result: **11 / 11 assertions passing**. Full tape suite: **1328 / 1328 passing** across **36 spec files**. Typecheck, ESLint, Prettier, toolchain/platform preflight, source build, and diff check are clean. No packaged Electron app was launched in this sandbox; the manual CI gate remains unexecuted and no upstream platform issue is closed.
+
+## Later phase — checkpoint 4 (2026-11-07)
+
+`RELEASE_POLICY.md` defines `v0.37.0-fork.N` tags from `master`, forbids publishing from feature branches or upstream tags, targets the fork repository, and requires all platform builds plus native packaged smoke tests before a release. `scripts/checkReleasePolicy.mjs` enforces the static CI boundary. A guarded `deb`/`rpm` after-remove scriptlet now tolerates missing alternatives registrations, and the Flatpak/Flathub boundary is explicit: no manifest, listing restoration, or publisher verification is included.
+
+Targeted result: **9 / 9 assertions passing**. Full tape suite: **1337 / 1337 passing** across **37 spec files**. Typecheck, ESLint, Prettier, toolchain/platform/release preflight, source build, and diff check are clean. No release tag, GitHub Release, packaged RPM removal test, or Flathub listing was created; no upstream issue is closed.
+
+## Later phase — checkpoint 5 (2026-11-07)
+
+Checkpoint 5 implemented the minimal native-UX boundary: an always-visible, translated `Show Sidebar` control and bounded Ctrl/Cmd keyboard/numpad zoom shortcuts. No broad redesign, new sidebar root, dependency-heavy UI, or extra POS confirmation was added. `NATIVE_UX.md`, `scripts/checkNativeUXPolicy.mjs`, and `tests/testNativeUX.spec.ts` document and guard the boundary.
+
+Targeted result: **16 / 16 assertions passing**. Full tape suite: **1353 / 1353 passing** across **38 spec files**. Typecheck, ESLint, Prettier, toolchain/platform/release/native-UX preflight, source build, and diff check are clean. This completes all five later-phase checkpoints at source/gate level; real packaged launch/removal evidence, release tags, real customer fixtures, and upstream issue closure remain open.
+
+## CI native-module correction (2026-11-07)
+
+After checkpoint 5, GitHub Actions on macOS ARM64/Node `22.14.0` failed during `yarn` because the old `better-sqlite3` source could not compile against Node 22 V8 headers. The manifest and lock now use `better-sqlite3@13.0.3` (Node `>=22`, no install-time `node-gyp` script), with `node-addon-api@8.5.0` and an updated toolchain preflight. A direct SQLite probe and the full local gate set pass: **1353 / 1353 assertions** across **38 specs**. Packaged Electron-ABI rebuild and launch remain native-runner gates.
+
+CI also needed a committed tape setup (`scripts/testSetup.js`, `global-jsdom`, a `.vue` stub, and an `ipc` proxy) and an electron-builder 26 schema correction (`mac.notarize: false`; no removed `win.publisherName` or `win.signDlls`). The builder config was validated against the 26.18.0 schema and the platform preflight now guards those fields. No upstream issue is closed by these CI corrections.
+
+## Final Electron 45 CI correction (2026-11-07)
+
+A renderer-origin regression was diagnosed from CI console logs: Vite emitted absolute `app://assets/...` URLs, which Electron 45 blocked by CORS from the `app://.` origin. `build/scripts/build.mjs` now uses relative asset URLs, and `uitest/index.mjs` waits for the app navigation and mounted `#app` while surfacing renderer errors. This is a build/test wiring fix, not a UI redesign.
+
+PR #2's final checks are green on GitHub Actions: `setup_and_lint`, `setup_and_test`, `setup_and_uitest`, and `setup_and_build` all pass. The earlier Windows `ia32` packaging failure remains resolved by the x64-only policy. Real packaged Linux launches/removals, release tags, real customer fixtures, and upstream issue closure are still open; no upstream issue is locally closed.

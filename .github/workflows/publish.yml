@@ -9,7 +9,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.1'
+          node-version: '22.14.0'
 
       - name: Checkout Books
         uses: actions/checkout@v4
@@ -18,6 +18,12 @@ jobs:
         run: |
           yarn set version 1.22.18
           yarn
+
+      - name: Preflight toolchain, platform, and release policy
+        run: |
+          yarn check:toolchain
+          yarn check:platform
+          yarn check:release
 
       - name: Set Error Log Creds
         env:
@@ -59,7 +65,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.1'
+          node-version: '22.14.0'
 
       - name: Checkout Books
         uses: actions/checkout@v4
@@ -68,6 +74,12 @@ jobs:
         run: |
           yarn set version 1.22.18
           yarn
+
+      - name: Preflight toolchain, platform, and release policy
+        run: |
+          yarn check:toolchain
+          yarn check:platform
+          yarn check:release
 
       - name: Set Error Log Creds
         env:
@@ -109,7 +121,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.1'
+          node-version: '22.14.0'
 
       - name: Checkout Books
         uses: actions/checkout@v4
@@ -118,6 +130,12 @@ jobs:
         run: |
           yarn set version 1.22.18
           yarn
+
+      - name: Preflight toolchain, platform, and release policy
+        run: |
+          yarn check:toolchain
+          yarn check:platform
+          yarn check:release
 
       - name: Set Error Log Creds
         env:
@@ -157,13 +175,19 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.1'
+          node-version: '22.14.0'
 
       - name: Checkout Books
         uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: yarn
+
+      - name: Preflight toolchain, platform, and release policy
+        run: |
+          yarn check:toolchain
+          yarn check:platform
+          yarn check:release
 
       - name: Set Error Log Creds
         env:

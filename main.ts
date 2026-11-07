@@ -21,6 +21,10 @@ import registerAutoUpdaterListeners from './main/registerAutoUpdaterListeners';
 import registerIpcMainActionListeners from './main/registerIpcMainActionListeners';
 import registerIpcMainMessageListeners from './main/registerIpcMainMessageListeners';
 import registerProcessListeners from './main/registerProcessListeners';
+import {
+  getZoomActionFromKeyboardEvent,
+  shouldDisableChromiumSandbox,
+} from './src/utils/platform';
 
 export class Main {
   title = 'Frappe Books';
@@ -48,6 +52,9 @@ export class Main {
 
     // https://github.com/electron-userland/electron-builder/issues/4987
     app.commandLine.appendSwitch('disable-http2');
+    if (shouldDisableChromiumSandbox(process.platform, process.env)) {
+      app.commandLine.appendSwitch('no-sandbox');
+    }
     autoUpdater.requestHeaders = {
       'Cache-Control':
         'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -55,7 +62,7 @@ export class Main {
 
     this.registerListeners();
     if (this.isMac && this.isDevelopment) {
-      app.dock.setIcon(this.icon);
+      app.dock?.setIcon(this.icon);
     }
   }
 
@@ -162,10 +169,31 @@ export class Main {
       this.mainWindow = null;
     });
 
-    this.mainWindow.webContents.on('did-fail-load', () => {
+    const webContents = this.mainWindow.webContents;
+    webContents.on('did-fail-load', () => {
       this.mainWindow!.loadURL(this.winURL).catch((err) =>
         emitMainProcessError(err)
       );
+    });
+
+    webContents.on('before-input-event', (event, input) => {
+      const action = getZoomActionFromKeyboardEvent(input);
+      if (!action) {
+        return;
+      }
+
+      event.preventDefault();
+      if (action === 'resetZoom') {
+        webContents.setZoomLevel(0);
+        return;
+      }
+
+      const currentZoomLevel = webContents.getZoomLevel();
+      const nextZoomLevel =
+        action === 'zoomIn'
+          ? Math.min(currentZoomLevel + 0.5, 3)
+          : Math.max(currentZoomLevel - 0.5, -3);
+      webContents.setZoomLevel(nextZoomLevel);
     });
   }
 }

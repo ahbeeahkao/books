@@ -7,6 +7,7 @@ import {
   RawValue,
   TargetField,
 } from 'schemas/types';
+import { getCanonicalImportFieldKey, withExcelBom } from './stabilization';
 import { generateCSV } from 'utils/csvParser';
 import { GetAllOptions, QueryFilter } from 'utils/db/types';
 import { getMapFromList, safeParseFloat } from 'utils/index';
@@ -141,12 +142,14 @@ export async function getCsvExportData(
 
   const flatHeaders = [headers.parent, headers.child].flat();
   const labels = flatHeaders.map((f) => f.label);
-  const keys = flatHeaders.map((f) => `${f.schemaName}.${f.fieldname}`);
+  const keys = flatHeaders.map((f) =>
+    getCanonicalImportFieldKey(f.schemaName, f.fieldname)
+  );
 
   rows.unshift(keys);
   rows.unshift(labels);
 
-  return generateCSV(rows);
+  return withExcelBom(generateCSV(rows));
 }
 
 function getCsvHeaders(

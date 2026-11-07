@@ -36,6 +36,10 @@ import { StockTransfer } from 'models/inventory/StockTransfer';
 import { validateBatch } from 'models/inventory/helpers';
 import { ModelNameEnum } from 'models/types';
 import { Money } from 'pesa';
+import {
+  getLineItemDiscountAmount,
+  truncateMoneyForCurrency,
+} from 'src/utils/stabilization';
 import { FieldTypeEnum, Schema } from 'schemas/types';
 import { getIsNullOrUndef, joinMapLists, safeParseFloat } from 'utils';
 import { Defaults } from '../Defaults/Defaults';
@@ -445,11 +449,20 @@ export abstract class Invoice extends Transactional {
             amount = amount.sub(itemDiscountAmount);
           }
 
+          const currency = String(
+            this.currency ?? this.fyo.singles.SystemSettings?.currency ?? ''
+          );
+          const taxAmount = truncateMoneyForCurrency(
+            amount.mul(details.rate / 100),
+            currency,
+            (value) => this.fyo.pesa(value)
+          );
+
           const taxItem: InvoiceTaxItem = {
             details,
             exchangeRate: this.exchangeRate ?? 1,
             fullAmount: amount,
-            taxAmount: amount.mul(details.rate / 100),
+            taxAmount,
           };
 
           taxItems.push(taxItem);
@@ -593,8 +606,10 @@ export abstract class Invoice extends Transactional {
     let discountAmount = this.fyo.pesa(0);
     if (item.setItemDiscountAmount) {
       discountAmount = discountAmount.add(
-        (item.itemDiscountAmount ?? this.fyo.pesa(0)).mul(
-          item.quantity as number
+        getLineItemDiscountAmount(
+          item.itemDiscountAmount ?? this.fyo.pesa(0),
+          item.amount ?? this.fyo.pesa(0),
+          (value) => this.fyo.pesa(value)
         )
       );
     } else if (!this.discountAfterTax) {
@@ -646,8 +661,10 @@ export abstract class Invoice extends Transactional {
     for (const item of this.items) {
       if (item.setItemDiscountAmount) {
         discountAmount = discountAmount.add(
-          (item.itemDiscountAmount ?? this.fyo.pesa(0)).mul(
-            item.quantity as number
+          getLineItemDiscountAmount(
+            item.itemDiscountAmount ?? this.fyo.pesa(0),
+            item.amount ?? this.fyo.pesa(0),
+            (value) => this.fyo.pesa(value)
           )
         );
       } else if (!this.discountAfterTax) {
@@ -707,7 +724,11 @@ export abstract class Invoice extends Transactional {
     const totalTaxRate = await this.getTotalTaxRate(row);
     const rate = row.rate ?? this.fyo.pesa(0);
     const quantity = row.quantity ?? 1;
-    const itemDiscountAmount = row.itemDiscountAmount ?? this.fyo.pesa(0);
+    const itemDiscountAmount = getLineItemDiscountAmount(
+      row.itemDiscountAmount ?? this.fyo.pesa(0),
+      rate.mul(quantity),
+      (value) => this.fyo.pesa(value)
+    );
     const itemDiscountPercent = row.itemDiscountPercent ?? 0;
 
     if (row.setItemDiscountAmount && row.itemDiscountAmount?.isZero()) {
@@ -729,7 +750,13 @@ export abstract class Invoice extends Transactional {
 
     const taxedTotal = rate.mul(quantity).mul(1 + totalTaxRate / 100);
     if (row.setItemDiscountAmount) {
-      return taxedTotal.sub(itemDiscountAmount);
+      return taxedTotal.sub(
+        getLineItemDiscountAmount(
+          row.itemDiscountAmount ?? this.fyo.pesa(0),
+          taxedTotal,
+          (value) => this.fyo.pesa(value)
+        )
+      );
     }
 
     return taxedTotal.mul(1 - itemDiscountPercent / 100);

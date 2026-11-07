@@ -1,4 +1,5 @@
 import { Fyo, t } from 'fyo';
+import { getFiscalDateParts } from '../src/utils/stabilization';
 import { cloneDeep } from 'lodash';
 import { DateTime } from 'luxon';
 import { AccountRootType } from 'models/baseModels/Account/types';
@@ -463,16 +464,19 @@ export async function getFiscalEndpoints(
    * prepend with the passed year.
    */
 
+  const fiscalStart = getFiscalDateParts(fys as Date | string);
+  const fiscalEnd = getFiscalDateParts(fye as Date | string);
+
   const fromDate = [
     fromYear,
-    (fys.getMonth() + 1).toString().padStart(2, '0'),
-    fys.getDate().toString().padStart(2, '0'),
+    fiscalStart.month.toString().padStart(2, '0'),
+    fiscalStart.day.toString().padStart(2, '0'),
   ].join('-');
 
   const toDate = [
     toYear,
-    (fye.getMonth() + 1).toString().padStart(2, '0'),
-    fye.getDate().toString().padStart(2, '0'),
+    fiscalEnd.month.toString().padStart(2, '0'),
+    fiscalEnd.day.toString().padStart(2, '0'),
   ].join('-');
 
   return { fromDate, toDate };

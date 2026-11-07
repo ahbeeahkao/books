@@ -15,15 +15,21 @@
     "script:translate": "scripts/runner.sh scripts/generateTranslations.ts",
     "script:profile": "scripts/profile.sh",
     "test": "scripts/test.sh",
+    "check:toolchain": "node scripts/checkToolchain.mjs",
     "uitest": "node uitest/index.mjs | tap-spec",
     "lint": "eslint . --ext ts,vue",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "rebuild:native": "electron-rebuild",
+    "check:native-arch": "node scripts/checkNativeArchitecture.mjs",
+    "check:platform": "node scripts/checkPlatformPolicy.mjs",
+    "check:release": "node scripts/checkReleasePolicy.mjs",
+    "check:native-ux": "node scripts/checkNativeUXPolicy.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.4.2",
     "@codemirror/lang-vue": "^0.1.1",
     "@popperjs/core": "^2.10.2",
-    "better-sqlite3": "^9.2.2",
+    "better-sqlite3": "13.0.3",
     "bree": "^9.2.4",
     "codemirror": "^6.0.1",
     "core-js": "^3.19.0",
@@ -42,7 +48,7 @@
     "@codemirror/language": "^6.0.0",
     "@codemirror/state": "^6.0.0",
     "@codemirror/view": "^6.0.0",
-    "@electron/rebuild": "^3.4.1",
+    "@electron/rebuild": "4.2.1",
     "@lezer/common": "^1.0.0",
     "@types/assert": "^1.5.6",
     "@types/better-sqlite3": "^7.6.4",
@@ -59,10 +65,10 @@
     "autoprefixer": "^9",
     "chokidar": "^3.5.3",
     "dotenv": "^16.0.0",
-    "electron": "22.3.27",
-    "electron-builder": "^24.9.1",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0",
     "electron-devtools-installer": "^3.2.0",
-    "electron-updater": "^6.3.0",
+    "electron-updater": "6.8.11",
     "eslint": "^8.43.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
@@ -82,10 +88,12 @@
     "typescript": "^4.6.2",
     "vite": "^5.4.21",
     "vue-tsc": "^1.6.5",
-    "yargs": "^17.7.2"
+    "yargs": "^17.7.2",
+    "global-jsdom": "9.2.0",
+    "jsdom": "23.2.0"
   },
   "resolutions": {
-    "node-abi": "^3.54.0"
+    "node-abi": "^4.40.0"
   },
   "prettier": {
     "semi": true,
@@ -94,7 +102,7 @@
   },
   "homepage": "https://frappe.io/books",
   "repository": {
-    "url": "https://github.com/frappe/books"
+    "url": "https://github.com/ahbeeahkao/books.git"
   },
   "license": "AGPL-3.0-only"
 }

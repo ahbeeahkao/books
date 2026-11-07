@@ -203,6 +203,8 @@
         m-4
         rtl-rotate-180
       "
+      :aria-label="t`Hide Sidebar`"
+      :title="t`Hide Sidebar`"
       @click="() => toggleSidebar()"
     >
       <feather-icon name="chevrons-left" class="w-4 h-4" />
