@@ -312,3 +312,9 @@ Targeted result: **16 / 16 assertions passing**. Full tape suite: **1353 / 1353 
 After checkpoint 5, GitHub Actions on macOS ARM64/Node `22.14.0` failed during `yarn` because the old `better-sqlite3` source could not compile against Node 22 V8 headers. The manifest and lock now use `better-sqlite3@13.0.3` (Node `>=22`, no install-time `node-gyp` script), with `node-addon-api@8.5.0` and an updated toolchain preflight. A direct SQLite probe and the full local gate set pass: **1353 / 1353 assertions** across **38 specs**. Packaged Electron-ABI rebuild and launch remain native-runner gates.
 
 CI also needed a committed tape setup (`scripts/testSetup.js`, `global-jsdom`, a `.vue` stub, and an `ipc` proxy) and an electron-builder 26 schema correction (`mac.notarize: false`; no removed `win.publisherName` or `win.signDlls`). The builder config was validated against the 26.18.0 schema and the platform preflight now guards those fields. No upstream issue is closed by these CI corrections.
+
+## Final Electron 45 CI correction (2026-11-07)
+
+A renderer-origin regression was diagnosed from CI console logs: Vite emitted absolute `app://assets/...` URLs, which Electron 45 blocked by CORS from the `app://.` origin. `build/scripts/build.mjs` now uses relative asset URLs, and `uitest/index.mjs` waits for the app navigation and mounted `#app` while surfacing renderer errors. This is a build/test wiring fix, not a UI redesign.
+
+PR #2's final checks are green on GitHub Actions: `setup_and_lint`, `setup_and_test`, `setup_and_uitest`, and `setup_and_build` all pass. The earlier Windows `ia32` packaging failure remains resolved by the x64-only policy. Real packaged Linux launches/removals, release tags, real customer fixtures, and upstream issue closure are still open; no upstream issue is locally closed.
