@@ -11,12 +11,18 @@ const appSourcePath = path.join(root, 'dist_electron', 'build', 'main.js');
   const electronApp = await _electron.launch({ args: [appSourcePath] });
   const window = await electronApp.firstWindow();
   window.setDefaultTimeout(60_000);
+  window.setDefaultNavigationTimeout(60_000);
+
+  // Electron can still be navigating from about:blank to the custom app://
+  // protocol when firstWindow resolves. Waiting for the final URL and load
+  // state avoids reading the title from a destroyed execution context.
+  await window.waitForURL(/^app:/);
+  await window.waitForLoadState('domcontentloaded');
+  await window.waitForLoadState('load');
 
   test('load app', async (t) => {
     t.equal(await window.title(), 'Frappe Books', 'title matches');
-
-    await new Promise((r) => window.once('load', () => r()));
-    t.ok(true, 'window has loaded');
+    t.ok(await window.locator('body').isVisible(), 'window has loaded');
   });
 
   test('navigate to database selector', async (t) => {
