@@ -28,10 +28,11 @@ jobs:
       - name: Install Dependencies
         run: yarn
 
-      - name: Platform preflight
+      - name: Platform and native UX preflight
         run: |
           yarn check:toolchain
           yarn check:platform
+          yarn check:native-ux
 
       - name: Run Tests
         run: yarn test

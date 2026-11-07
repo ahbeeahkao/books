@@ -113,6 +113,25 @@ Limitations:
 - Flathub restoration, publisher verification from #1144, and Flatpak target builds remain explicitly out of scope.
 - No upstream issue is marked locally closed without packaged artifacts and package-manager evidence.
 
-## Checkpoint 5
+## Checkpoint 5 — minimal native UX
 
-Pending in sequential order.
+**Status:** source, static policy, and unit tests implemented; **no packaged Electron app was launched and no e2e/screenshot UI test was recorded**.
+
+- `src/pages/Desk.vue` replaces the low-opacity hover-only sidebar restore icon with an always-visible background/border control, a chevron, and a translated `Show Sidebar` text label. `aria-label` and `title` remain translatable through `t`; RTL rotation is applied to the icon only.
+- `src/utils/platform.ts` adds the pure `getZoomActionFromKeyboardEvent` helper, and `main.ts` wires it through Electron's `before-input-event`. `Ctrl/Cmd +`, `=`, `-`, `0`, and numpad variants now zoom in, zoom out, or reset zoom with conservative bounds.
+- `NATIVE_UX.md` records the boundary: no broad redesign, no new dependencies, no new sidebar roots, no extra POS confirmations, and no untranslated visible labels.
+- `scripts/checkNativeUXPolicy.mjs` checks the visible control, translatable labels, zoom wiring, documentation boundaries, and `yarn check:native-ux` registration. `tests/testNativeUX.spec.ts` covers 16 keyboard/policy assertions. `.github/workflows/test.yml` runs the native UX preflight.
+- `src/utils/sidebarConfig.ts` and `src/pages/POS/POS.vue` were deliberately left unchanged.
+
+Verification:
+
+- Targeted native UX spec: **16 / 16 passing**.
+- Full tape suite at checkpoint 5: **1353 / 1353 passing** across **38 spec files**.
+- `vue-tsc`, ESLint, Prettier, `yarn check:toolchain`, `yarn check:platform`, `yarn check:release`, `yarn check:native-ux`, `node build/scripts/build.mjs --nopackage`, and `git diff --check`: all green.
+
+Limitations:
+
+- The sidebar change was verified statically and through source build, not a packaged app screenshot.
+- Zoom mapping was verified with synthetic keyboard inputs, not a live Electron `webContents` session.
+- Broader translation gaps (#459), regional issues (#624), printing delay (#1427), and dropdown clipping (#1495) remain deferred; no upstream issue is locally closed.
+- Together, CP3–CP5 complete the five later-phase checkpoints at the source/gate level. Real packaged launch/removal outputs, release tags, real customer data, and genuine upstream issue closure remain open.

@@ -21,7 +21,10 @@ import registerAutoUpdaterListeners from './main/registerAutoUpdaterListeners';
 import registerIpcMainActionListeners from './main/registerIpcMainActionListeners';
 import registerIpcMainMessageListeners from './main/registerIpcMainMessageListeners';
 import registerProcessListeners from './main/registerProcessListeners';
-import { shouldDisableChromiumSandbox } from './src/utils/platform';
+import {
+  getZoomActionFromKeyboardEvent,
+  shouldDisableChromiumSandbox,
+} from './src/utils/platform';
 
 export class Main {
   title = 'Frappe Books';
@@ -166,10 +169,31 @@ export class Main {
       this.mainWindow = null;
     });
 
-    this.mainWindow.webContents.on('did-fail-load', () => {
+    const webContents = this.mainWindow.webContents;
+    webContents.on('did-fail-load', () => {
       this.mainWindow!.loadURL(this.winURL).catch((err) =>
         emitMainProcessError(err)
       );
+    });
+
+    webContents.on('before-input-event', (event, input) => {
+      const action = getZoomActionFromKeyboardEvent(input);
+      if (!action) {
+        return;
+      }
+
+      event.preventDefault();
+      if (action === 'resetZoom') {
+        webContents.setZoomLevel(0);
+        return;
+      }
+
+      const currentZoomLevel = webContents.getZoomLevel();
+      const nextZoomLevel =
+        action === 'zoomIn'
+          ? Math.min(currentZoomLevel + 0.5, 3)
+          : Math.max(currentZoomLevel - 0.5, -3);
+      webContents.setZoomLevel(nextZoomLevel);
     });
   }
 }

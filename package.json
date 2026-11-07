@@ -22,7 +22,8 @@
     "rebuild:native": "electron-rebuild",
     "check:native-arch": "node scripts/checkNativeArchitecture.mjs",
     "check:platform": "node scripts/checkPlatformPolicy.mjs",
-    "check:release": "node scripts/checkReleasePolicy.mjs"
+    "check:release": "node scripts/checkReleasePolicy.mjs",
+    "check:native-ux": "node scripts/checkNativeUXPolicy.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.4.2",

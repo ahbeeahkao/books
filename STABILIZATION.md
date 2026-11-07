@@ -300,3 +300,9 @@ Targeted result: **11 / 11 assertions passing**. Full tape suite: **1328 / 1328 
 `RELEASE_POLICY.md` defines `v0.37.0-fork.N` tags from `master`, forbids publishing from feature branches or upstream tags, targets the fork repository, and requires all platform builds plus native packaged smoke tests before a release. `scripts/checkReleasePolicy.mjs` enforces the static CI boundary. A guarded `deb`/`rpm` after-remove scriptlet now tolerates missing alternatives registrations, and the Flatpak/Flathub boundary is explicit: no manifest, listing restoration, or publisher verification is included.
 
 Targeted result: **9 / 9 assertions passing**. Full tape suite: **1337 / 1337 passing** across **37 spec files**. Typecheck, ESLint, Prettier, toolchain/platform/release preflight, source build, and diff check are clean. No release tag, GitHub Release, packaged RPM removal test, or Flathub listing was created; no upstream issue is closed.
+
+## Later phase — checkpoint 5 (2026-11-07)
+
+Checkpoint 5 implemented the minimal native-UX boundary: an always-visible, translated `Show Sidebar` control and bounded Ctrl/Cmd keyboard/numpad zoom shortcuts. No broad redesign, new sidebar root, dependency-heavy UI, or extra POS confirmation was added. `NATIVE_UX.md`, `scripts/checkNativeUXPolicy.mjs`, and `tests/testNativeUX.spec.ts` document and guard the boundary.
+
+Targeted result: **16 / 16 assertions passing**. Full tape suite: **1353 / 1353 passing** across **38 spec files**. Typecheck, ESLint, Prettier, toolchain/platform/release/native-UX preflight, source build, and diff check are clean. This completes all five later-phase checkpoints at source/gate level; real packaged launch/removal evidence, release tags, real customer fixtures, and upstream issue closure remain open.

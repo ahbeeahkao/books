@@ -47,7 +47,7 @@ All 108 open issues were reviewed by title, labels, body, and comment count. Fea
 
 ## Pass 4 local status (2026-11-06)
 
-Implemented after this tracker was created. No upstream GitHub issues were closed. No real broken `.db` reproduction, visual redesign, new sidebar roots, extra POS clicks, FTS/scheduled jobs, Electron upgrade, release tag, or packaged-artifact smoke test was attempted.
+Implemented after this tracker was created. No upstream GitHub issues were closed. The historical stabilization pass did not include real broken `.db` reproduction, visual redesign, new sidebar roots, extra POS clicks, FTS/scheduled jobs, Electron upgrade, release tag, or packaged-artifact smoke tests. Later-phase checkpoints 3–5 subsequently added source-level Electron/platform, release-policy, and minimal native-UX gates; real packaged evidence is still open.
 
 | Upstream issue(s)               | Local status                            | Evidence / remaining gate                                                                                                                                                                   |
 | ------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -61,10 +61,10 @@ Implemented after this tracker was created. No upstream GitHub issues were close
 | #1535                           | **Unresolved**                          | Needs a COA root delete/recreate reproduction; no UI or schema change was made.                                                                                                             |
 | #1491, #1222                    | **Fixed (synthetic)**                   | Canonical export/import field keys, UTF-8 BOM CSV export, BOM-tolerant parser, and regression tests.                                                                                        |
 | #1390                           | **Fixed**                               | ERPNext sync button no longer reloads/redirects the window; success/error toasts and error logging remain.                                                                                  |
-| #1523                           | **Fixed**                               | Sidebar restore control is visibly rendered and labelled; this is a functional fix, not a visual redesign.                                                                                  |
+| #1523                           | **Fixed (synthetic source gate)**       | Sidebar restore control is always visible, labelled through `t`, and covered by a static native UX gate; no packaged UI screenshot yet.                                                     |
 | #1444                           | **Fixed**                               | `npm run check:toolchain` validates Node, `yarn.lock`, absence of `package-lock.json`, and pinned module versions.                                                                          |
 | #1515, #1395, #1551             | **Release policy (synthetic)**          | Fork tag/release policy, guarded RPM/DEB scriptlet, and explicit Flatpak/Flathub boundary added; packaged artifacts and package-manager verification remain open.                           |
-| #459, #624, #1470, #1495, #1427 | **Deferred**                            | Translation/regional/UI polish remains with later visual redesign work.                                                                                                                     |
+| #459, #624, #1470, #1495, #1427 | **Partially addressed (synthetic)**     | #1470 zoom shortcuts added; broader translation, regional, printing, and dropdown polish remain deferred.                                                                                   |
 
 ### Later-phase checkpoint 1 (2026-11-07)
 
@@ -173,7 +173,7 @@ This is **not** a packaged launch smoke test. The manual native-runner workflow 
 
 **Upstream:** [#1523](https://github.com/frappe/books/issues/1523)
 **Why critical:** once minimized, the sidebar cannot be restored, blocking normal navigation.
-**Fork status:** **Triage.** This is a functional regression, not a visual redesign or new sidebar root.
+**Fork status:** **Fixed (synthetic source gate).** The collapsed sidebar restore control is always visible and translated; no packaged UI screenshot has been attached.
 **Next action:** reproduce minimize/restore on macOS and add a small state/control regression test if practical.
 
 ---
@@ -198,7 +198,7 @@ This is **not** a packaged launch smoke test. The manual native-runner workflow 
 
 **Upstream:** [#459](https://github.com/frappe/books/issues/459), [#624](https://github.com/frappe/books/issues/624), [#1470](https://github.com/frappe/books/issues/1470), [#1495](https://github.com/frappe/books/issues/1495), [#1427](https://github.com/frappe/books/issues/1427)
 **Why deferred:** these are regional/visual/printing-polish issues, not data-loss or accounting-correctness blockers.
-**Fork status:** **Deferred.** Keep these with the later visual redesign / UX workstream, not the stabilization gate.
+**Fork status:** **Partially addressed (synthetic).** Checkpoint 5 added native zoom shortcuts for #1470 and a translated visible sidebar label; broader translation, regional, printing, and dropdown clipping work remains deferred.
 
 ---
 
@@ -231,10 +231,16 @@ An upstream issue can be marked locally **closed** only when all of the followin
 2. Checkpoint 1 recorded labelled synthetic `DatabaseManager` reproductions for P0-1 / P0-2, and checkpoint 2 recorded labelled synthetic reconciliation fixtures. Real broken-`.db` samples and customer/COA/pricing/stock-ledger data remain open gates.
 3. Checkpoint 3 added platform policy and a manual packaged-artifact gate; run it on native x64/ARM64 runners, then finish the checkpoint-4 release policy.
 4. Re-run the full verification gates after each remaining fix.
-5. Only then revisit visual redesign, new sidebar roots, and extra POS clicks.
+5. Checkpoint 5 completed minimal native UX (visible sidebar restore and zoom shortcuts); broad visual redesign, new sidebar roots, and extra POS clicks remain out of scope.
 
 ### Later-phase checkpoint 4 (2026-11-07)
 
 Checkpoint 4 recorded the fork version/tag/release policy and its CI preflight, guarded the RPM/DEB uninstall alternatives scriptlet, corrected case-sensitive Windows installer icon paths, and explicitly excluded Flatpak/Flathub restoration from this fork. See `RELEASE_POLICY.md` and `LATER_PHASE_EVIDENCE.md`.
 
 This is **not** a release. No tag, GitHub Release, packaged RPM, `dnf remove` transaction, or Flathub listing was produced in the Arena sandbox. Upstream #1515, #1395, and #1551 remain open until packaged artifacts and package-manager evidence are attached.
+
+### Later-phase checkpoint 5 (2026-11-07)
+
+Checkpoint 5 kept the existing sidebar roots and visual language. It made the collapsed `Show Sidebar` control always visible and translated, and added native keyboard/numpad zoom shortcuts without new dependencies or POS confirmations. See `NATIVE_UX.md` and `LATER_PHASE_EVIDENCE.md`.
+
+No packaged Electron window, screenshot/e2e UI test, or upstream issue closure was performed. Broader translation, regional, printing, and dropdown polish remain deferred.
