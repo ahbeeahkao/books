@@ -14,7 +14,7 @@ const expected = {
   tape: '5.6.1',
   'ts-node': '10.7.0',
   'tsconfig-paths': '3.14.1',
-  'better-sqlite3': '9.6.0',
+  'better-sqlite3': '13.0.3',
 };
 
 const failures = [];

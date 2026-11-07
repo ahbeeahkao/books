@@ -84,7 +84,7 @@ Verification:
 Limitations:
 
 - This sandbox cannot download/run Electron desktop binaries for Linux x64 or ARM64, so the manual packaged-architecture workflow and Xvfb launch step were **not executed here**.
-- `npm rebuild better-sqlite3 --build-from-source` restored the host test toolchain, but it is not an Electron-ABI rebuild inside a packaged artifact. `yarn rebuild:native` on a native CI runner remains the packaged rebuild gate.
+- The old host toolchain used a local-only rebuild of `better-sqlite3@9.6.0`; that version is superseded by the CI native-module correction below. `yarn rebuild:native` on a native CI runner remains the packaged Electron-ABI rebuild gate.
 - Yarn's registry fetch endpoint was not usable from this sandbox. Direct lock entries were added, but a full transitive `yarn.lock` regeneration should be performed by a network-enabled CI runner.
 - No upstream issue is marked locally closed without the packaged launch and native-architecture smoke-test outputs.
 
@@ -135,3 +135,11 @@ Limitations:
 - Zoom mapping was verified with synthetic keyboard inputs, not a live Electron `webContents` session.
 - Broader translation gaps (#459), regional issues (#624), printing delay (#1427), and dropdown clipping (#1495) remain deferred; no upstream issue is locally closed.
 - Together, CP3–CP5 complete the five later-phase checkpoints at the source/gate level. Real packaged launch/removal outputs, release tags, real customer data, and genuine upstream issue closure remain open.
+
+## CI native-module correction (after checkpoint 5)
+
+The first GitHub Actions run on the checkpoint-5 commit failed at `yarn` on macOS ARM64 with Node `22.14.0`: the locked `better-sqlite3@9.3.0` source could not compile against Node 22 V8 headers (`SetAccessor` / `PropertyAttribute` mismatch). This was an install-time native-module failure, not a failure in the tape suite, typecheck, lint, or source build.
+
+The fork manifest now pins `better-sqlite3@13.0.3`, whose npm metadata requires Node `>=22` and whose package scripts no longer run an install-time `node-gyp` compile. `yarn.lock` gained the exact `better-sqlite3@13.0.3` and `node-addon-api@^8.0.0` entries, and `scripts/checkToolchain.mjs` now expects `13.0.3`. A direct in-memory SQLite probe succeeded locally. `yarn rebuild:native` remains the packaged Electron-ABI gate; no packaged app was launched here.
+
+All local gates were rerun after the upgrade: **1353 / 1353 tape assertions** across **38 specs**, plus typecheck, ESLint, Prettier, toolchain/platform/release/native-UX preflight, source build, and `git diff --check`. The publish/package smoke-test boundaries documented above are unchanged.
