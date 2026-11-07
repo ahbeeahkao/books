@@ -111,6 +111,10 @@ if (
   failures.push('electron-builder win config uses fields removed in v26');
 }
 
+if (builderConfigSource.includes("'ia32'")) {
+  failures.push('Electron 45 does not publish Windows ia32 artifacts');
+}
+
 if (!mainSource.includes('shouldDisableChromiumSandbox')) {
   failures.push('main process is missing the Linux sandbox opt-in guard');
 }

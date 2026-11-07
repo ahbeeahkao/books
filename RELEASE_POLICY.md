@@ -14,7 +14,7 @@ This document records the release boundary for the `ahbeeahkao/books` fork. It i
 
 `.github/workflows/publish.yml` remains manually dispatched. Every platform job runs the toolchain, platform, and release-policy preflights before packaging. A release is allowed only when:
 
-1. Linux, macOS, macOS ARM, and Windows builds succeed and produce the expected artifacts. Inspect the first actionable error in each failed job; do not assume a signing-certificate failure.
+1. Linux, macOS, macOS ARM, and Windows builds succeed and produce the expected artifacts. Electron 45 Windows packaging is x64-only because no `win32-ia32` Electron 45 archive is published. Inspect the first actionable error in each failed job; do not assume a signing-certificate failure.
 2. The Linux x64 and ARM64 packaged smoke tests in `.github/workflows/platform.yml` have passed, including native-module architecture checks.
 3. Required signing/notarization secrets are available. Missing credentials or a failed platform build blocks the whole release; Linux artifacts are not presented as a complete release on their own.
 4. The RPM `%postun` scriptlet has been verified to exit zero when `update-alternatives` was never configured (upstream issue #1395).
