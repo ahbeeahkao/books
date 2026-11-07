@@ -9,6 +9,23 @@ const appSourcePath = path.join(root, 'dist_electron', 'build', 'main.js');
 
 (async function run() {
   const electronApp = await _electron.launch({ args: [appSourcePath] });
+  electronApp.on('window', (page) => {
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        console.error('[renderer console]', message.text());
+      }
+    });
+    page.on('pageerror', (error) => {
+      console.error('[renderer pageerror]', error.stack || error.message);
+    });
+    page.on('requestfailed', (request) => {
+      console.error(
+        '[renderer requestfailed]',
+        request.url(),
+        request.failure()?.errorText
+      );
+    });
+  });
   const window = await electronApp.firstWindow();
   window.setDefaultTimeout(60_000);
   window.setDefaultNavigationTimeout(60_000);
@@ -19,6 +36,12 @@ const appSourcePath = path.join(root, 'dist_electron', 'build', 'main.js');
   await window.waitForURL(/^app:/);
   await window.waitForLoadState('domcontentloaded');
   await window.waitForLoadState('load');
+
+  console.error('[uitest] url:', window.url());
+  console.error(
+    '[uitest] body:',
+    (await window.locator('body').innerHTML()).slice(0, 1000)
+  );
 
   test('load app', async (t) => {
     t.equal(await window.title(), 'Frappe Books', 'title matches');
