@@ -19,6 +19,12 @@ jobs:
           yarn set version 1.22.18
           yarn
 
+      - name: Preflight toolchain, platform, and release policy
+        run: |
+          yarn check:toolchain
+          yarn check:platform
+          yarn check:release
+
       - name: Set Error Log Creds
         env:
           ERR_LOG_KEY: ${{ secrets.ERR_LOG_KEY }}
@@ -68,6 +74,12 @@ jobs:
         run: |
           yarn set version 1.22.18
           yarn
+
+      - name: Preflight toolchain, platform, and release policy
+        run: |
+          yarn check:toolchain
+          yarn check:platform
+          yarn check:release
 
       - name: Set Error Log Creds
         env:
@@ -119,6 +131,12 @@ jobs:
           yarn set version 1.22.18
           yarn
 
+      - name: Preflight toolchain, platform, and release policy
+        run: |
+          yarn check:toolchain
+          yarn check:platform
+          yarn check:release
+
       - name: Set Error Log Creds
         env:
           ERR_LOG_KEY: ${{ secrets.ERR_LOG_KEY }}
@@ -164,6 +182,12 @@ jobs:
 
       - name: Install Dependencies
         run: yarn
+
+      - name: Preflight toolchain, platform, and release policy
+        run: |
+          yarn check:toolchain
+          yarn check:platform
+          yarn check:release
 
       - name: Set Error Log Creds
         env:

@@ -258,7 +258,7 @@ Verification:
 - `node build/scripts/build.mjs --nopackage`: exit 0 with the same pre-existing Vite dynamic-import/chunk-size warnings.
 - `git diff --check`: clean.
 
-Unresolved by design: real broken `.db` files, packaged Linux/ARM64 smoke-test outputs, release tags, RPM/Flatpak scriptlets, concrete customer-balance/COA/pricing-rule fixtures, and any visual redesign/new sidebar roots/extra POS clicks. These remain in `UPSTREAM_CRITICAL_ISSUES.md` with explicit gates.
+Unresolved by design: real broken `.db` files, packaged Linux/ARM64 smoke-test outputs, release tags, packaged RPM removal verification, Flathub restoration, concrete customer-balance/COA/pricing-rule fixtures, and any visual redesign/new sidebar roots/extra POS clicks. These remain in `UPSTREAM_CRITICAL_ISSUES.md` with explicit gates.
 
 ## Later phase — checkpoint 1 (2026-11-07)
 
@@ -294,3 +294,9 @@ Platform dependencies were upgraded to Electron `45.2.3`, electron-builder `26.1
 `scripts/checkNativeArchitecture.mjs` and `scripts/checkPlatformPolicy.mjs` are new static/runtime gates. `LINUX_SANDBOX.md` documents Ubuntu 24.04 user-namespace fixes and a Linux-only `BOOKS_DISABLE_CHROMIUM_SANDBOX` fallback; the main process keeps the Chromium sandbox enabled by default.
 
 Targeted result: **11 / 11 assertions passing**. Full tape suite: **1328 / 1328 passing** across **36 spec files**. Typecheck, ESLint, Prettier, toolchain/platform preflight, source build, and diff check are clean. No packaged Electron app was launched in this sandbox; the manual CI gate remains unexecuted and no upstream platform issue is closed.
+
+## Later phase — checkpoint 4 (2026-11-07)
+
+`RELEASE_POLICY.md` defines `v0.37.0-fork.N` tags from `master`, forbids publishing from feature branches or upstream tags, targets the fork repository, and requires all platform builds plus native packaged smoke tests before a release. `scripts/checkReleasePolicy.mjs` enforces the static CI boundary. A guarded `deb`/`rpm` after-remove scriptlet now tolerates missing alternatives registrations, and the Flatpak/Flathub boundary is explicit: no manifest, listing restoration, or publisher verification is included.
+
+Targeted result: **9 / 9 assertions passing**. Full tape suite: **1337 / 1337 passing** across **37 spec files**. Typecheck, ESLint, Prettier, toolchain/platform/release preflight, source build, and diff check are clean. No release tag, GitHub Release, packaged RPM removal test, or Flathub listing was created; no upstream issue is closed.

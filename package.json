@@ -21,7 +21,8 @@
     "format": "prettier --write .",
     "rebuild:native": "electron-rebuild",
     "check:native-arch": "node scripts/checkNativeArchitecture.mjs",
-    "check:platform": "node scripts/checkPlatformPolicy.mjs"
+    "check:platform": "node scripts/checkPlatformPolicy.mjs",
+    "check:release": "node scripts/checkReleasePolicy.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.4.2",
@@ -98,7 +99,7 @@
   },
   "homepage": "https://frappe.io/books",
   "repository": {
-    "url": "https://github.com/frappe/books"
+    "url": "https://github.com/ahbeeahkao/books.git"
   },
   "license": "AGPL-3.0-only"
 }

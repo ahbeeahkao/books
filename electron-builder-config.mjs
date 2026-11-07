@@ -68,9 +68,15 @@ const frappeBooksConfig = {
     oneClick: false,
     perMachine: false,
     allowToChangeInstallationDirectory: true,
-    installerIcon: 'build/installericon.ico',
-    uninstallerIcon: 'build/uninstallericon.ico',
+    installerIcon: 'build/installerIcon.ico',
+    uninstallerIcon: 'build/uninstallerIcon.ico',
     publish: ['github'],
+  },
+  deb: {
+    afterRemove: 'build/scripts/linux/after-remove.sh',
+  },
+  rpm: {
+    afterRemove: 'build/scripts/linux/after-remove.sh',
   },
   linux: {
     icon: 'build/icons',

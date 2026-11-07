@@ -56,10 +56,10 @@
 
 ## Checkpoint progress
 
-| Checkpoint | Status                                     | Evidence                                                                                     |
-| ---------- | ------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| 1          | **Synthetic issue-step reproduction done** | `LATER_PHASE_EVIDENCE.md`; 48/48 targeted assertions; real broken-`.db` gate remains open.   |
-| 2          | **Synthetic reconciliation fixtures done** | `LATER_PHASE_EVIDENCE.md`; 29/29 targeted assertions; real reconciliation data remains open. |
-| 3          | **Platform policy/gates implemented**      | `LATER_PHASE_EVIDENCE.md`; 11/11 targeted assertions; real packaged smoke tests remain open. |
-| 4          | Pending                                    | Version/tag/release policy, RPM scriptlet guard, Flatpak/Flathub boundary.                   |
-| 5          | Pending                                    | Minimal native-desktop UX, functional roots, and no extra core POS confirmation clicks.      |
+| Checkpoint | Status                                     | Evidence                                                                                                                      |
+| ---------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1          | **Synthetic issue-step reproduction done** | `LATER_PHASE_EVIDENCE.md`; 48/48 targeted assertions; real broken-`.db` gate remains open.                                    |
+| 2          | **Synthetic reconciliation fixtures done** | `LATER_PHASE_EVIDENCE.md`; 29/29 targeted assertions; real reconciliation data remains open.                                  |
+| 3          | **Platform policy/gates implemented**      | `LATER_PHASE_EVIDENCE.md`; 11/11 targeted assertions; real packaged smoke tests remain open.                                  |
+| 4          | **Release policy/gates implemented**       | `RELEASE_POLICY.md` and `LATER_PHASE_EVIDENCE.md`; 9/9 targeted assertions; real release/package-manager outputs remain open. |
+| 5          | Pending                                    | Minimal native-desktop UX, functional roots, and no extra core POS confirmation clicks.                                       |

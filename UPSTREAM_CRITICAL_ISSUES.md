@@ -63,7 +63,7 @@ Implemented after this tracker was created. No upstream GitHub issues were close
 | #1390                           | **Fixed**                               | ERPNext sync button no longer reloads/redirects the window; success/error toasts and error logging remain.                                                                                  |
 | #1523                           | **Fixed**                               | Sidebar restore control is visibly rendered and labelled; this is a functional fix, not a visual redesign.                                                                                  |
 | #1444                           | **Fixed**                               | `npm run check:toolchain` validates Node, `yarn.lock`, absence of `package-lock.json`, and pinned module versions.                                                                          |
-| #1515, #1395, #1551             | **Unresolved release/distribution**     | Fork release policy and RPM/Flatpak scriptlets need packaged artifacts and package-manager verification.                                                                                    |
+| #1515, #1395, #1551             | **Release policy (synthetic)**          | Fork tag/release policy, guarded RPM/DEB scriptlet, and explicit Flatpak/Flathub boundary added; packaged artifacts and package-manager verification remain open.                           |
 | #459, #624, #1470, #1495, #1427 | **Deferred**                            | Translation/regional/UI polish remains with later visual redesign work.                                                                                                                     |
 
 ### Later-phase checkpoint 1 (2026-11-07)
@@ -191,8 +191,8 @@ This is **not** a packaged launch smoke test. The manual native-runner workflow 
 
 **Upstream:** [#1515](https://github.com/frappe/books/issues/1515), [#1395](https://github.com/frappe/books/issues/1395), [#1551](https://github.com/frappe/books/issues/1551)
 **Why relevant:** upstream `v0.37.0` was never tagged/released, RPM uninstall scriptlets emit errors, and the Flathub package is no longer maintained.
-**Fork status:** **Platform / Triage.** Fork-specific release policy is undecided; no Flatpak/Flathub or RPM work is planned for stabilization.
-**Next action:** decide fork version/tag/release policy, verify ARM64 packaging from P0-5, and only then decide whether RPM/Flatpak artifacts are in scope.
+**Fork status:** **Release policy (synthetic).** `RELEASE_POLICY.md`, `yarn check:release`, guarded `deb`/`rpm` after-remove scriptlets, fork repository metadata, and publish preflights are in place. Flatpak/Flathub remains out of scope; no packaged RPM removal test or release tag exists.
+**Next action:** run the checkpoint-3 native x64/ARM64 packaged smoke tests, verify a real RPM removal transaction, then create a `v0.37.0-fork.N` release from `master` only after all platform jobs succeed.
 
 ### P2-3. Translation, regional and UI polish
 
@@ -232,3 +232,9 @@ An upstream issue can be marked locally **closed** only when all of the followin
 3. Checkpoint 3 added platform policy and a manual packaged-artifact gate; run it on native x64/ARM64 runners, then finish the checkpoint-4 release policy.
 4. Re-run the full verification gates after each remaining fix.
 5. Only then revisit visual redesign, new sidebar roots, and extra POS clicks.
+
+### Later-phase checkpoint 4 (2026-11-07)
+
+Checkpoint 4 recorded the fork version/tag/release policy and its CI preflight, guarded the RPM/DEB uninstall alternatives scriptlet, corrected case-sensitive Windows installer icon paths, and explicitly excluded Flatpak/Flathub restoration from this fork. See `RELEASE_POLICY.md` and `LATER_PHASE_EVIDENCE.md`.
+
+This is **not** a release. No tag, GitHub Release, packaged RPM, `dnf remove` transaction, or Flathub listing was produced in the Arena sandbox. Upstream #1515, #1395, and #1551 remain open until packaged artifacts and package-manager evidence are attached.

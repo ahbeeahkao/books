@@ -88,6 +88,31 @@ Limitations:
 - Yarn's registry fetch endpoint was not usable from this sandbox. Direct lock entries were added, but a full transitive `yarn.lock` regeneration should be performed by a network-enabled CI runner.
 - No upstream issue is marked locally closed without the packaged launch and native-architecture smoke-test outputs.
 
-## Checkpoints 4–5
+## Checkpoint 4 — release policy and distribution boundary
+
+**Status:** policy, static gates, and guarded RPM scriptlet implemented; **no release tag, GitHub Release, packaged RPM, package-manager removal test, or Flathub listing was created**.
+
+- `RELEASE_POLICY.md` records the fork version/tag rule: keep `package.json` as the version source, use `v0.37.0-fork.N` tags from `master`, never reuse upstream `v0.37.0`, and publish only to `ahbeeahkao/books`.
+- `package.json` now points `repository.url` to the fork and exposes `yarn check:release`. `.github/workflows/publish.yml` remains manually dispatched and runs toolchain, platform, and release-policy preflights on every platform job.
+- `scripts/checkReleasePolicy.mjs` rejects feature branches, pull-request refs, and upstream tags in CI, checks the fork repository and release-gate wiring, and fails if a Flatpak target appears without a revised distribution checkpoint.
+- `build/scripts/linux/after-remove.sh` is wired through `deb.afterRemove` and `rpm.afterRemove`. It queries the alternatives database before removal, tolerates `update-alternatives --remove` errors, preserves AppArmor cleanup, and always exits zero. This addresses the scriptlet shape reported in #1395.
+- Windows NSIS icon paths were corrected to the actual camelCase filenames, removing one case-sensitive release blocker noted in #1515. The policy still requires the first actionable CI error from any failed platform build, not an assumed signing failure.
+- `RELEASE_POLICY.md` states that Flatpak/Flathub support is out of scope: no `flatpak` target, manifest, publisher verification, or listing restoration is included. The existing `io.frappe.books` appId is retained for compatibility only.
+- `tests/testReleasePolicy.spec.ts` covers allowed/blocked release refs, the static gate, and two synthetic `update-alternatives` failure modes for the guarded scriptlet.
+
+Verification:
+
+- Targeted release spec: **9 / 9 passing**.
+- Full tape suite at checkpoint 4: **1337 / 1337 passing** across **37 spec files**.
+- `vue-tsc`, ESLint, Prettier, `yarn check:toolchain`, `yarn check:platform`, `yarn check:release`, `node build/scripts/build.mjs --nopackage`, and `git diff --check`: all green.
+
+Limitations:
+
+- No RPM was built or removed with `dnf`; the guarded scriptlet was exercised with synthetic command stubs, not a package-manager transaction.
+- No release tag, draft, or GitHub Release was created; the publish workflow was not executed.
+- Flathub restoration, publisher verification from #1144, and Flatpak target builds remain explicitly out of scope.
+- No upstream issue is marked locally closed without packaged artifacts and package-manager evidence.
+
+## Checkpoint 5
 
 Pending in sequential order.
