@@ -3,11 +3,9 @@ set -o pipefail
 export IS_TEST=true
 
 if [ "$#" -gt 0 ]; then
-  specs=("$@")
+  ./scripts/runner.sh ./node_modules/.bin/tape "$@" | ./node_modules/.bin/tap-spec
 else
-  mapfile -t specs < <(
-    find . -path ./node_modules -prune -o -name '*.spec.ts' -print | sort
-  )
+  find . -path ./node_modules -prune -o -name '*.spec.ts' -print0 |
+    xargs -0 ./scripts/runner.sh ./node_modules/.bin/tape |
+    ./node_modules/.bin/tap-spec
 fi
-
-./scripts/runner.sh ./node_modules/.bin/tape "${specs[@]}" | ./node_modules/.bin/tap-spec
