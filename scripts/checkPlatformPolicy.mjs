@@ -72,14 +72,25 @@ for (const requiredPath of requiredPaths) {
 }
 
 const lockSource = readFileSync(new URL('yarn.lock', root), 'utf8');
+const lockKeys = new Set(
+  lockSource
+    .split('\n')
+    .filter((line) => line.endsWith(':') && !line.startsWith(' '))
+    .flatMap((line) =>
+      line
+        .slice(0, -1)
+        .split(', ')
+        .map((key) => key.trim().replace(/^"|"$/g, ''))
+    )
+);
 for (const entry of [
-  'electron@45.2.3:',
-  'electron-builder@26.18.0:',
-  '"@electron/rebuild@4.2.1":',
-  'electron-updater@6.8.11:',
+  'electron@45.2.3',
+  'electron-builder@26.18.0',
+  '@electron/rebuild@4.2.1',
+  'electron-updater@6.8.11',
 ]) {
-  if (!lockSource.includes(entry)) {
-    failures.push(`yarn.lock is missing direct entry ${entry}`);
+  if (!lockKeys.has(entry)) {
+    failures.push(`yarn.lock is missing direct entry ${entry}:`);
   }
 }
 
