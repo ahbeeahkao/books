@@ -172,4 +172,48 @@ export class SalesInvoice extends Invoice {
   static getActions(fyo: Fyo): Action[] {
     return getInvoiceActions(fyo, ModelNameEnum.SalesInvoice);
   }
+
+  async afterSubmit(): Promise<void> {
+    await super.afterSubmit();
+    const settings = this.fyo.singles.EInvoiceSettings as unknown as
+      | import('src/utils/malaysiaEInvoice').EInvoiceSettingsConfig
+      | undefined;
+    if (!settings?.enableEInvoice || !settings?.autoSubmitOnInvoiceSubmit) {
+      return;
+    }
+
+    try {
+      const { buildMyInvoisUBLDocument, submitToMyInvois } = await import(
+        'src/utils/malaysiaEInvoice'
+      );
+      const ubl = buildMyInvoisUBLDocument(
+        {
+          name: String(this.name ?? ''),
+          date: this.date as Date | string | undefined,
+          party: this.party as string | undefined,
+          netTotal: Number(
+            (this.netTotal as { float?: number } | undefined)?.float ?? 0
+          ),
+          grandTotal: Number(
+            (this.grandTotal as { float?: number } | undefined)?.float ?? 0
+          ),
+          isReturn: Boolean(this.isReturn),
+        },
+        settings
+      );
+      const result = await submitToMyInvois(
+        ubl,
+        String(this.name ?? ''),
+        settings
+      );
+      await this.setMultiple({
+        eInvoiceUuid: result.uuid ?? '',
+        eInvoiceLongId: result.longId ?? '',
+        eInvoiceValidationUrl: result.validationUrl ?? '',
+      });
+      await this.sync();
+    } catch {
+      // Non-fatal: invoice remains submitted locally if MyInvois is unreachable
+    }
+  }
 }

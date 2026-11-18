@@ -35,6 +35,24 @@ export class DatabaseManager extends DatabaseDemuxBase {
       return result;
     }
 
+  async searchFts(
+    table: string,
+    columns: string[],
+    query: string,
+    limit = 25
+  ): Promise<Record<string, unknown>[]> {
+    const sqlite = (this.bespoke as unknown as { db?: { client?: { pool?: unknown } } })
+      ?.db as unknown as import('src/utils/ftsSearch').FtsQueryable | undefined;
+    if (!sqlite || typeof sqlite.prepare !== 'function') {
+      return [];
+    }
+    const { ensureFtsTable, searchWithFts } = await import(
+      'src/utils/ftsSearch'
+    );
+    ensureFtsTable(sqlite, table, columns);
+    return searchWithFts(sqlite, table, columns, query, limit);
+  }
+
   async connectToDatabase(dbPath: string, countryCode?: string) {
     if (dbPath && dbPath !== ':memory:') {
       try {
