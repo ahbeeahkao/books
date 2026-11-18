@@ -194,3 +194,8 @@ If you want to contribute code then you can fork this repo, make changes and rai
 - [Telegram Group](https://t.me/frappebooks): Used for discussions and decisions regarding everything Frappe Books.
 - [GitHub Discussions](https://github.com/frappe/books/discussions): Used for discussions around a specific topic.
 - [Documentation](https://docs.frappe.io/books): Official documentation for more details.
+
+## User Guide & Fork Features
+
+- See [USER_GUIDE.md](USER_GUIDE.md) for how to use invoicing, inventory/POS (barcodes, batches, serial numbers, and typed-cash POS shifts), **Custom Report Builder**, and **Malaysia e-Invoice (MyInvois)**.
+- See [GLOSSARY.md](GLOSSARY.md) for accounting and POS terminology.
