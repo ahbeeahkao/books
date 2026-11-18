@@ -222,6 +222,30 @@ export default defineComponent({
     await this.reset();
   },
   methods: {
+    async exportSupportLogs() {
+      const { getTelemetrySnapshot } = await import('src/utils/telemetry');
+      const payload = {
+        timestamp: new Date().toISOString(),
+        platform: navigator.platform,
+        userAgent: navigator.userAgent,
+        version: this.fyo.singles.SystemSettings?.version ?? '',
+        logsHint: '%APPDATA%\\frappe-books\\logs\\',
+        telemetry: getTelemetrySnapshot(),
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `frappe-books-support-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast({
+        type: 'success',
+        message: this.t`Support diagnostics exported.`,
+      });
+    },
     async reset() {
       const resetableDocs = this.schemas
         .map(({ name }) => this.fyo.singles[name])
