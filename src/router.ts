@@ -8,6 +8,7 @@ import PrintView from 'src/pages/PrintView/PrintView.vue';
 import ReportPrintView from 'src/pages/PrintView/ReportPrintView.vue';
 import QuickEditForm from 'src/pages/QuickEditForm.vue';
 import Report from 'src/pages/Report.vue';
+import CustomReportBuilder from 'src/pages/CustomReportBuilder.vue';
 import Settings from 'src/pages/Settings/Settings.vue';
 import TemplateBuilder from 'src/pages/TemplateBuilder/TemplateBuilder.vue';
 import CustomizeForm from 'src/pages/CustomizeForm/CustomizeForm.vue';
@@ -84,6 +85,11 @@ const routes: RouteRecordRaw[] = [
     name: 'Report',
     component: Report,
     props: true,
+  },
+  {
+    path: '/custom-report-builder',
+    name: 'CustomReportBuilder',
+    component: CustomReportBuilder,
   },
   {
     path: '/chart-of-accounts',

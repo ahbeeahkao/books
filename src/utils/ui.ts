@@ -206,6 +206,49 @@ export function getActionsForDoc(doc?: Doc): Action[] {
     actions.push(...viewActions);
   }
 
+  if (
+    doc?.schemaName === 'SalesInvoice' &&
+    doc.fyo.singles.EInvoiceSettings?.enableEInvoice
+  ) {
+    actions.push({
+      group: t`e-Invoice`,
+      label: t`Export Malaysia e-Invoice (UBL)`,
+      async action() {
+        const { buildMyInvoisUBLDocument, validateEInvoiceConfig } =
+          await import('src/utils/malaysiaEInvoice');
+        const settings = doc.fyo.singles.EInvoiceSettings as unknown as Record<
+          string,
+          unknown
+        >;
+        const errors = validateEInvoiceConfig(settings);
+        if (errors.length) {
+          showToast({ type: 'error', message: errors.join(' ') });
+          return;
+        }
+        const ubl = buildMyInvoisUBLDocument(
+          {
+            name: String(doc.name ?? ''),
+            date: doc.date as Date | string | undefined,
+            party: doc.party as string | undefined,
+            netTotal: Number(
+              (doc.netTotal as { float?: number } | undefined)?.float ?? 0
+            ),
+            grandTotal: Number(
+              (doc.grandTotal as { float?: number } | undefined)?.float ?? 0
+            ),
+            isReturn: Boolean(doc.isReturn),
+          },
+          settings
+        );
+        await navigator.clipboard?.writeText(JSON.stringify(ubl, null, 2));
+        showToast({
+          type: 'success',
+          message: t`Malaysia e-Invoice UBL JSON copied to clipboard.`,
+        });
+      },
+    });
+  }
+
   return actions
     .filter((d) => d.condition?.(doc) ?? true)
     .map((d) => {
@@ -887,7 +930,7 @@ export const printSizes = [
 ] as const;
 
 export const paperSizeMap: Record<
-  typeof printSizes[number],
+  (typeof printSizes)[number],
   { width: number; height: number }
 > = {
   A0: {
