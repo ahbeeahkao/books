@@ -184,6 +184,9 @@ export default defineComponent({
        * To be called through ref by the parent component.
        */
 
+      await this.$nextTick();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // @ts-ignore
       const innerHTML = this.$refs.scaledContainer.$el.children[0].innerHTML;
       if (typeof innerHTML !== 'string') {

@@ -1059,3 +1059,7 @@ john@doe.com,,
 "to apply changes","pour appliquer les changements",
 "Allow to bypass filters","Autoriser la désactivation des filtres"
 "When linking documents, if no match is found and filtering is in effect, allow to disable filters.","Lors de la sélection d'un document lié, autoriser à désactiver les filtres si aucun résultat n'est trouvé"
+"Show Sidebar","Show Sidebar"
+"Hide Sidebar","Hide Sidebar"
+"Custom Report Builder","Custom Report Builder"
+"Malaysia e-Invoice","Malaysia e-Invoice"

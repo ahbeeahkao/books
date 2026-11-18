@@ -11,6 +11,22 @@
 
     <div class="p-4 grid grid-cols-12 gap-4 overflow-auto flex-1">
       <div class="col-span-4 space-y-4 border-r dark:border-gray-800 pr-4">
+        <div v-if="savedReports.length">
+          <label class="block text-sm font-medium mb-1 dark:text-gray-200">
+            {{ t`Load Saved Report` }}
+          </label>
+          <select
+            v-model="selectedSavedReport"
+            class="w-full px-3 py-1.5 text-sm border rounded dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+            @change="loadSavedReport"
+          >
+            <option value="">{{ t`Select a saved report...` }}</option>
+            <option v-for="r in savedReports" :key="r.name" :value="r.name">
+              {{ r.title || r.name }}
+            </option>
+          </select>
+        </div>
+
         <div>
           <label class="block text-sm font-medium mb-1 dark:text-gray-200">
             {{ t`Report Title` }}
@@ -64,13 +80,29 @@
             <label class="text-sm font-medium dark:text-gray-200">
               {{ t`Filters` }}
             </label>
-            <button
-              type="button"
-              class="text-xs text-blue-600 hover:underline"
-              @click="addFilter"
-            >
-              + {{ t`Add Filter` }}
-            </button>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="text-xs text-gray-600 dark:text-gray-300 hover:underline"
+                @click="applyDatePreset('thisMonth')"
+              >
+                {{ t`This Month` }}
+              </button>
+              <button
+                type="button"
+                class="text-xs text-gray-600 dark:text-gray-300 hover:underline"
+                @click="applyDatePreset('thisYear')"
+              >
+                {{ t`This Year` }}
+              </button>
+              <button
+                type="button"
+                class="text-xs text-blue-600 hover:underline"
+                @click="addFilter"
+              >
+                + {{ t`Add Filter` }}
+              </button>
+            </div>
           </div>
           <div v-for="(f, idx) in filters" :key="idx" class="flex gap-1 mb-2">
             <select
@@ -160,6 +192,8 @@ import {
   applyCustomFilters,
   CustomFilterOperator,
   CustomReportFilter,
+  parseCustomColumns,
+  parseCustomFilters,
 } from 'reports/CustomReport';
 
 export default defineComponent({
@@ -190,7 +224,18 @@ export default defineComponent({
         '<=',
       ] as CustomFilterOperator[],
       rows: [] as Record<string, unknown>[],
+      savedReports: [] as {
+        name: string;
+        title?: string;
+        baseModel?: string;
+        columnsJson?: string;
+        filtersJson?: string;
+      }[],
+      selectedSavedReport: '',
     };
+  },
+  async mounted() {
+    await this.fetchSavedReports();
   },
   computed: {
     availableFields() {
@@ -219,6 +264,47 @@ export default defineComponent({
     },
   },
   methods: {
+    async fetchSavedReports() {
+      this.savedReports = (await fyo.db.getAll(ModelNameEnum.CustomReport, {
+        fields: ['name', 'title', 'baseModel', 'columnsJson', 'filtersJson'],
+      })) as {
+        name: string;
+        title?: string;
+        baseModel?: string;
+        columnsJson?: string;
+        filtersJson?: string;
+      }[];
+    },
+    loadSavedReport() {
+      const report = this.savedReports.find(
+        (r) => r.name === this.selectedSavedReport
+      );
+      if (!report) {
+        return;
+      }
+      this.title = report.title || report.name;
+      if (report.baseModel) {
+        this.baseModel = report.baseModel;
+      }
+      this.selectedFieldnames = parseCustomColumns(report.columnsJson).map(
+        (c) => c.fieldname
+      );
+      this.filters = parseCustomFilters(report.filtersJson);
+    },
+    applyDatePreset(preset: 'thisMonth' | 'thisYear') {
+      const now = new Date();
+      const start =
+        preset === 'thisMonth'
+          ? new Date(now.getFullYear(), now.getMonth(), 1)
+          : new Date(now.getFullYear(), 0, 1);
+      const startIso = start.toISOString().slice(0, 10);
+      const endIso = now.toISOString().slice(0, 10);
+      this.filters = [
+        ...this.filters.filter((f) => f.fieldname !== 'date'),
+        { fieldname: 'date', operator: '>=', value: startIso },
+        { fieldname: 'date', operator: '<=', value: endIso },
+      ];
+    },
     addFilter() {
       this.filters.push({
         fieldname: this.availableFields[0]?.fieldname ?? 'name',

@@ -35,6 +35,16 @@ export class DatabaseManager extends DatabaseDemuxBase {
   }
 
   async connectToDatabase(dbPath: string, countryCode?: string) {
+    if (dbPath && dbPath !== ':memory:') {
+      try {
+        const { createDatabaseBackup } = await import(
+          'src/utils/autoBackup'
+        );
+        createDatabaseBackup(dbPath);
+      } catch {
+        // Non-fatal: continue opening database if backup directory is read-only
+      }
+    }
     countryCode = await this._connect(dbPath, countryCode);
     await this.#migrate();
     return countryCode;
