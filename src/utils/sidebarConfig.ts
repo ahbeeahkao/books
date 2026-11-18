@@ -138,6 +138,11 @@ function getReportSidebar() {
         name: 'trial-balance',
         route: '/report/TrialBalance',
       },
+      {
+        label: t`Custom Report Builder`,
+        name: 'custom-report-builder',
+        route: '/custom-report-builder',
+      },
     ],
   };
 }

@@ -1,0 +1,55 @@
+{
+  "name": "CustomReport",
+  "label": "Custom Report",
+  "titleField": "title",
+  "fields": [
+    {
+      "fieldname": "title",
+      "label": "Report Title",
+      "fieldtype": "Data",
+      "required": true
+    },
+    {
+      "fieldname": "baseModel",
+      "label": "Base Document",
+      "fieldtype": "Select",
+      "options": [
+        { "label": "Sales Invoice", "value": "SalesInvoice" },
+        { "label": "Purchase Invoice", "value": "PurchaseInvoice" },
+        { "label": "Payment", "value": "Payment" },
+        { "label": "Journal Entry", "value": "JournalEntry" },
+        { "label": "Account", "value": "Account" },
+        { "label": "Item", "value": "Item" },
+        { "label": "Party", "value": "Party" }
+      ],
+      "default": "SalesInvoice",
+      "required": true
+    },
+    {
+      "fieldname": "columnsJson",
+      "label": "Columns (JSON)",
+      "fieldtype": "Text"
+    },
+    {
+      "fieldname": "filtersJson",
+      "label": "Filters (JSON)",
+      "fieldtype": "Text"
+    },
+    {
+      "fieldname": "sortBy",
+      "label": "Sort By Field",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "sortOrder",
+      "label": "Sort Order",
+      "fieldtype": "Select",
+      "options": [
+        { "label": "Descending", "value": "desc" },
+        { "label": "Ascending", "value": "asc" }
+      ],
+      "default": "desc"
+    }
+  ],
+  "listViewFields": ["title", "baseModel", "sortBy"]
+}

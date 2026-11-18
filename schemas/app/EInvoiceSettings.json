@@ -1,0 +1,78 @@
+{
+  "name": "EInvoiceSettings",
+  "label": "Malaysia e-Invoice Settings",
+  "isSingle": true,
+  "fields": [
+    {
+      "fieldname": "enableEInvoice",
+      "label": "Enable Malaysia e-Invoice (MyInvois)",
+      "fieldtype": "Check",
+      "default": false
+    },
+    {
+      "fieldname": "environment",
+      "label": "Environment",
+      "fieldtype": "Select",
+      "options": [
+        { "label": "Sandbox", "value": "Sandbox" },
+        { "label": "Production", "value": "Production" }
+      ],
+      "default": "Sandbox"
+    },
+    {
+      "fieldname": "autoSubmitOnInvoiceSubmit",
+      "label": "Auto-submit on Invoice Submit",
+      "fieldtype": "Check",
+      "default": false
+    },
+    {
+      "fieldname": "supplierTIN",
+      "label": "Supplier TIN",
+      "fieldtype": "Data",
+      "placeholder": "e.g. C1234567890"
+    },
+    {
+      "fieldname": "supplierBRN",
+      "label": "Supplier BRN / NRIC",
+      "fieldtype": "Data",
+      "placeholder": "e.g. 202001012345"
+    },
+    {
+      "fieldname": "supplierSST",
+      "label": "SST Registration No.",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "msicCode",
+      "label": "MSIC Code",
+      "fieldtype": "Data",
+      "placeholder": "e.g. 46510"
+    },
+    {
+      "fieldname": "businessActivityDescription",
+      "label": "Business Activity Description",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "clientId",
+      "label": "MyInvois Client ID",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "clientSecret",
+      "label": "MyInvois Client Secret",
+      "fieldtype": "Data"
+    }
+  ],
+  "quickEditFields": [
+    "enableEInvoice",
+    "environment",
+    "supplierTIN",
+    "supplierBRN",
+    "msicCode",
+    "businessActivityDescription",
+    "clientId",
+    "clientSecret",
+    "autoSubmitOnInvoiceSubmit"
+  ]
+}

@@ -8,7 +8,7 @@
       {{ t`Closing Cash` }}
     </h2>
     <Table
-      v-if="isValuesSeeded"
+      v-if="isValuesSeeded && posClosingShiftDoc?.closingCash?.length"
       class="text-base"
       :df="getField('closingCash')"
       :show-header="true"
@@ -17,6 +17,20 @@
       :read-only="false"
       @row-change="setClosingCashAmount"
     />
+
+    <div v-else-if="isValuesSeeded" class="mt-2">
+      <Currency
+        :df="{
+          fieldname: 'typedClosingCash',
+          fieldtype: 'Currency',
+          label: t`Closing Cash`,
+        }"
+        :value="typedClosingCash"
+        :show-label="true"
+        :border="true"
+        @change="handleTypedClosingCashChange"
+      />
+    </div>
 
     <h2 class="mt-6 mb-2 text-lg dark:text-gray-100 font-medium">
       Closing Amounts
@@ -60,6 +74,7 @@
 
 <script lang="ts">
 import Button from 'src/components/Button.vue';
+import Currency from 'src/components/Controls/Currency.vue';
 import Modal from 'src/components/Modal.vue';
 import Table from 'src/components/Controls/Table.vue';
 import { ModelNameEnum } from 'models/types';
@@ -81,7 +96,7 @@ import { ForbiddenError } from 'fyo/utils/errors';
 
 export default defineComponent({
   name: 'ClosePOSShiftModal',
-  components: { Button, Modal, Table },
+  components: { Button, Currency, Modal, Table },
   provide() {
     return {
       doc: computed(() => this.posClosingShiftDoc),
@@ -97,7 +112,7 @@ export default defineComponent({
   data() {
     return {
       isValuesSeeded: false,
-
+      typedClosingCash: fyo.pesa(0),
       posOpeningShiftDoc: undefined as POSOpeningShift | undefined,
       posClosingShiftDoc: undefined as POSClosingShift | undefined,
       transactedAmount: {} as Record<string, Money> | undefined,
@@ -169,6 +184,21 @@ export default defineComponent({
           );
         }
       });
+    },
+    handleTypedClosingCashChange(value: Money) {
+      this.typedClosingCash = value ?? fyo.pesa(0);
+      if (!this.posClosingShiftDoc?.closingAmounts) {
+        return;
+      }
+
+      for (const row of this.posClosingShiftDoc.closingAmounts) {
+        if (row.paymentMethod === 'Cash') {
+          row.closingAmount = this.typedClosingCash;
+          row.differenceAmount = row.closingAmount.sub(
+            row.expectedAmount as Money
+          );
+        }
+      }
     },
     async seedClosingAmounts() {
       if (!this.posClosingShiftDoc || !this.posOpeningShiftDoc) {

@@ -11,7 +11,7 @@
         </h2>
 
         <Table
-          v-if="isValuesSeeded"
+          v-if="isValuesSeeded && posShiftDoc?.openingCash?.length"
           class="mt-4 text-base"
           :df="getField('openingCash')"
           :show-header="true"
@@ -19,6 +19,20 @@
           :value="posShiftDoc?.openingCash"
           @row-change="handleChange"
         />
+
+        <div v-else-if="isValuesSeeded" class="mt-4">
+          <Currency
+            :df="{
+              fieldname: 'typedOpeningCash',
+              fieldtype: 'Currency',
+              label: t`Opening Cash`,
+            }"
+            :value="typedOpeningCash"
+            :show-label="true"
+            :border="true"
+            @change="handleTypedOpeningCashChange"
+          />
+        </div>
       </div>
 
       <div class="col-span-6">
@@ -68,6 +82,7 @@
 
 <script lang="ts">
 import Button from 'src/components/Button.vue';
+import Currency from 'src/components/Controls/Currency.vue';
 import Modal from 'src/components/Modal.vue';
 import Table from 'src/components/Controls/Table.vue';
 import { AccountTypeEnum } from 'models/baseModels/Account/types';
@@ -84,7 +99,7 @@ import { getPOSOpeningShiftDoc } from 'src/utils/pos';
 
 export default defineComponent({
   name: 'OpenPOSShift',
-  components: { Button, Modal, Table },
+  components: { Button, Currency, Modal, Table },
   provide() {
     return {
       doc: computed(() => this.posShiftDoc),
@@ -94,7 +109,7 @@ export default defineComponent({
   data() {
     return {
       posShiftDoc: undefined as POSOpeningShift | undefined,
-
+      typedOpeningCash: fyo.pesa(0),
       isValuesSeeded: false,
     };
   },
@@ -175,6 +190,18 @@ export default defineComponent({
     },
     handleChange() {
       this.setOpeningCashAmount();
+    },
+    handleTypedOpeningCashChange(value: Money) {
+      this.typedOpeningCash = value ?? fyo.pesa(0);
+      if (!this.posShiftDoc?.openingAmounts) {
+        return;
+      }
+
+      for (const row of this.posShiftDoc.openingAmounts) {
+        if (row.paymentMethod === 'Cash') {
+          row.amount = this.typedOpeningCash;
+        }
+      }
     },
     async handleSubmit() {
       try {
