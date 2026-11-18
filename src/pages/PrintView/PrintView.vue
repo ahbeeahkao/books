@@ -36,10 +36,19 @@
 
       <div
         v-if="doc?.eInvoiceValidationUrl"
-        class="mx-auto mb-3 max-w-2xl rounded border p-3 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
+        class="mx-auto mb-3 max-w-2xl rounded border p-3 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200 flex items-center gap-4"
       >
-        <p class="font-semibold">{{ t`MyInvois e-Invoice Validation` }}</p>
-        <p class="break-all">{{ doc.eInvoiceValidationUrl }}</p>
+        <img
+          :src="`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+            String(doc.eInvoiceValidationUrl)
+          )}`"
+          alt="MyInvois QR"
+          class="w-20 h-20 shrink-0"
+        />
+        <div>
+          <p class="font-semibold">{{ t`MyInvois e-Invoice Validation` }}</p>
+          <p class="break-all">{{ doc.eInvoiceValidationUrl }}</p>
+        </div>
       </div>
 
       <!-- Template Container -->

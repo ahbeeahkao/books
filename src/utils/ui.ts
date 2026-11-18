@@ -244,13 +244,23 @@ export function getActionsForDoc(doc?: Doc): Action[] {
             ? String(doc.eInvoiceValidationUrl)
             : undefined,
         });
-        const win = window.open('', '_blank', 'width=360,height=600');
-        if (win) {
-          win.document.write(html);
-          win.document.close();
-          win.focus();
-          win.print();
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+        const frameDoc = iframe.contentWindow?.document;
+        if (frameDoc) {
+          frameDoc.open();
+          frameDoc.write(html);
+          frameDoc.close();
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
         }
+        setTimeout(() => iframe.remove(), 1000);
       },
     });
   }
