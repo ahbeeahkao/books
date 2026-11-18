@@ -71,7 +71,7 @@ for (const requiredPath of requiredPaths) {
   }
 }
 
-const lockSource = readFileSync(new URL('yarn.lock', root), 'utf8');
+const lockSource = readFileSync(new URL('yarn.lock', root), 'utf8').replace(/\r\n/g, '\n');
 const lockKeys = new Set(
   lockSource
     .split('\n')

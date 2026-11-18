@@ -28,6 +28,8 @@
   - Enable **Has Serial Number** on the Item to track individual unit IDs from purchase to sale.
 - **POS Shifts:**
   - Open and close **POS Shifts** daily. If no cash denominations are configured in **Defaults**, type your opening and closing cash amounts directly.
+
+![POS View](https://github.com/user-attachments/assets/f75116b4-cf5f-45ee-9927-ba380fa56a46)
 - **80mm Thermal Receipt Printing:**
   - Open any **Sales Invoice** and click **Actions → Print 80mm Thermal Receipt** to print a narrow-width receipt. You can also customize print layouts in **Template Builder**.
 
@@ -35,6 +37,8 @@
 
 ## 4. Reports & Custom Report Builder
 - **Built-in Reports:** Open **General Ledger**, **Profit And Loss**, **Balance Sheet**, **Trial Balance**, and **Stock** reports from **Reports** in the sidebar.
+
+![General Ledger](https://github.com/user-attachments/assets/58d8bcdf-1576-4008-b010-7054fb64a12d)
 - **Custom Report Builder:**
   1. Go to **Reports → Custom Report Builder**.
   2. Choose a **Base Document** (`SalesInvoice`, `PurchaseInvoice`, `Payment`, `JournalEntry`, `Account`, `Item`, `Party`).
