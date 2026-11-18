@@ -50,57 +50,51 @@ export class ERPNextSyncSettings extends Doc {
   };
 
   async change(ch: ChangeArg) {
-    if (ch.changed === 'syncDataFromServer') {
-      try {
-        const { showToast } = await import('src/utils/interactive');
+    const { showToast } = await import('src/utils/interactive');
+    const operation =
+      ch.changed === 'syncDataFromServer'
+        ? 'sync_data_from_server'
+        : 'sync_data_to_server';
+
+    try {
+      if (ch.changed === 'syncDataFromServer') {
         showToast({
           type: 'warning',
           message: 'Fetching data from server.',
           duration: 'very_long',
         });
         await initERPNSync(this.fyo);
-        ipc.reloadWindow();
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-
-        try {
-          await this.fyo.doc
-            .getNewDoc(ErrorLogEnum.IntegrationErrorLog, {
-              error: errorMessage,
-              data: JSON.stringify({
-                instance: this.deviceID,
-                operation: 'sync_data_from_server',
-                trigger: 'change_event',
-              }),
-            })
-            .sync();
-        } catch (logError) {
-          throw logError;
-        }
-      }
-    } else if (ch.changed === 'syncDataToServer') {
-      try {
+        showToast({ type: 'success', message: 'Fetched data from server.' });
+      } else if (ch.changed === 'syncDataToServer') {
+        showToast({
+          type: 'warning',
+          message: 'Syncing data to server.',
+          duration: 'very_long',
+        });
         await syncDocumentsToERPNext(this.fyo);
-        ipc.reloadWindow();
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        showToast({ type: 'success', message: 'Synced data to server.' });
+      } else {
+        return;
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
 
-        try {
-          await this.fyo.doc
-            .getNewDoc(ErrorLogEnum.IntegrationErrorLog, {
-              error: errorMessage,
-              data: JSON.stringify({
-                instance: this.deviceID,
-                operation: 'sync_data_to_server',
-                trigger: 'change_event',
-              }),
-            })
-            .sync();
-        } catch (logError) {
-          throw logError;
-        }
+      showToast({ type: 'error', message: errorMessage });
+
+      try {
+        await this.fyo.doc
+          .getNewDoc(ErrorLogEnum.IntegrationErrorLog, {
+            error: errorMessage,
+            data: JSON.stringify({
+              instance: this.deviceID,
+              operation,
+              trigger: 'change_event',
+            }),
+          })
+          .sync();
+      } catch {
+        // The toast already surfaced the sync failure.
       }
     }
   }

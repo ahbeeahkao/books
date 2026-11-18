@@ -11,6 +11,10 @@ import {
 } from 'reports/types';
 import { Field, FieldTypeEnum } from 'schemas/types';
 import { QueryFilter } from 'utils/db/types';
+import {
+  getLedgerReconciliation,
+  getOpeningBalanceByGroup,
+} from '../../src/utils/reconciliation';
 
 type ReferenceType =
   | ModelNameEnum.SalesInvoice
@@ -32,6 +36,8 @@ export class GeneralLedger extends LedgerReport {
   referenceType: ReferenceType = 'All';
   groupBy: 'none' | 'party' | 'account' | 'referenceName' = 'none';
   _rawData: LedgerEntry[] = [];
+  _openingBalance = 0;
+  _openingBalanceByGroup: Record<string, number> = {};
 
   constructor(fyo: Fyo) {
     super(fyo);
@@ -42,6 +48,59 @@ export class GeneralLedger extends LedgerReport {
       this.toDate = DateTime.now().plus({ days: 1 }).toISODate();
       this.fromDate = DateTime.now().minus({ years: 1 }).toISODate();
     }
+  }
+
+  async _setRawData() {
+    await super._setRawData();
+
+    /**
+     * Fetch entries through `toDate` and reconcile locally. Older entries form
+     * the carry-forward opening balance (#1410) without silently dropping them
+     * from the running balance.
+     */
+    const fromDate =
+      this.fromDate instanceof Date || typeof this.fromDate === 'string'
+        ? this.fromDate
+        : undefined;
+    const toDate =
+      this.toDate instanceof Date || typeof this.toDate === 'string'
+        ? this.toDate
+        : undefined;
+    const reconciliation = getLedgerReconciliation(
+      this._rawData,
+      fromDate,
+      toDate
+    );
+    const groupBy = this.groupBy === 'none' ? 'all' : this.groupBy;
+    this._openingBalance = reconciliation.opening;
+    this._openingBalanceByGroup = getOpeningBalanceByGroup(
+      reconciliation.openingEntries,
+      groupBy
+    );
+    this._rawData = reconciliation.rangeEntries;
+  }
+
+  _getGroupedMap(
+    sort: boolean,
+    groupBy?: 'party' | 'account' | 'referenceName'
+  ): GroupedMap {
+    if (this.groupBy !== 'none') {
+      return super._getGroupedMap(sort, groupBy);
+    }
+
+    if (sort) {
+      this._rawData.sort((a, b) => {
+        if (this.ascending) {
+          return +a.date! - +b.date!;
+        }
+
+        return +b.date! - +a.date!;
+      });
+    }
+
+    const map: GroupedMap = new Map();
+    map.set('all', [...this._rawData]);
+    return map;
   }
 
   async setReportData(filter?: string, force?: boolean) {
@@ -56,6 +115,22 @@ export class GeneralLedger extends LedgerReport {
     this._setIndexOnEntries(map);
     const { totalDebit, totalCredit } = this._getTotalsAndSetBalance(map);
     const consolidated = this._consolidateEntries(map);
+
+    if (this._openingBalance !== 0) {
+      consolidated.unshift({
+        name: -4, // Opening balance row
+        account: t`Opening`,
+        date: null,
+        debit: 0,
+        credit: 0,
+        balance: this._openingBalance,
+        referenceType: '',
+        referenceName: '',
+        party: '',
+        reverted: false,
+        reverts: '',
+      });
+    }
 
     /**
      * Push a blank row if last row isn't blank
@@ -73,7 +148,7 @@ export class GeneralLedger extends LedgerReport {
       date: null,
       debit: totalDebit,
       credit: totalCredit,
-      balance: totalDebit - totalCredit,
+      balance: totalDebit - totalCredit + this._openingBalance,
       referenceType: '',
       referenceName: '',
       party: '',
@@ -197,7 +272,7 @@ export class GeneralLedger extends LedgerReport {
     let totalCredit = 0;
 
     for (const key of map.keys()) {
-      let balance = 0;
+      let balance = this._openingBalanceByGroup[String(key)] ?? 0;
       let debit = 0;
       let credit = 0;
 
@@ -261,10 +336,11 @@ export class GeneralLedger extends LedgerReport {
       (filters.date as string[]).push('<=', this.toDate as string);
     }
 
-    if (this.fromDate) {
-      filters.date ??= [];
-      (filters.date as string[]).push('>=', this.fromDate as string);
-    }
+    /**
+     * `fromDate` is intentionally omitted. `_setRawData()` reconciles the
+     * pre-range entries locally so the report can carry forward the opening
+     * balance while still showing only range transactions.
+     */
 
     if (!this.reverted) {
       filters.reverted = false;

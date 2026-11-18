@@ -21,6 +21,7 @@ import { LedgerPosting } from 'models/Transactional/LedgerPosting';
 import { Transactional } from 'models/Transactional/Transactional';
 import { ModelNameEnum } from 'models/types';
 import { Money } from 'pesa';
+import { getWriteOffLedgerAmounts } from 'src/utils/stabilization';
 import { QueryFilter } from 'utils/db/types';
 import { AccountTypeEnum } from '../Account/types';
 import { Invoice } from '../Invoice/Invoice';
@@ -173,11 +174,9 @@ export class Payment extends Transactional {
       .map(({ amount }) => amount as Money)
       .reduce((a, b) => a.add(b), this.fyo.pesa(0));
 
-    if (
-      (this.amount as Money)
-        .add((this.writeoff as Money) ?? 0)
-        .gte(referenceAmountTotal)
-    ) {
+    const writeOffMoney = this.writeoff ?? this.fyo.pesa(0);
+
+    if ((this.amount as Money).add(writeOffMoney).gte(referenceAmountTotal)) {
       return;
     }
 
@@ -185,7 +184,7 @@ export class Payment extends Transactional {
     const payment = this.fyo.format(this.amount!, 'Currency');
     const refAmount = this.fyo.format(referenceAmountTotal, 'Currency');
 
-    if ((this.writeoff as Money).gt(0)) {
+    if (writeOffMoney.gt(0)) {
       throw new ValidationError(
         this.fyo.t`Amount: ${payment} and writeoff: ${writeoff} 
           is less than the total amount allocated to 
@@ -200,7 +199,8 @@ export class Payment extends Transactional {
   }
 
   async validateWriteOffAccount() {
-    if ((this.writeoff as Money).isZero()) {
+    const writeoff = this.writeoff ?? this.fyo.pesa(0);
+    if (writeoff.isZero()) {
       return;
     }
 
@@ -346,9 +346,15 @@ export class Payment extends Transactional {
     const paymentAccount = this.paymentAccount as string;
     const account = this.account as string;
     const amount = this.amount as Money;
+    const writeoff = this.writeoff ?? this.fyo.pesa(0);
+    const ledgerAmounts = getWriteOffLedgerAmounts(
+      amount,
+      writeoff,
+      this.paymentType as 'Receive' | 'Pay'
+    );
 
-    await posting.debit(paymentAccount, amount);
-    await posting.credit(account, amount);
+    await posting.debit(paymentAccount, ledgerAmounts.cash);
+    await posting.credit(account, ledgerAmounts.account);
 
     if (this.taxes) {
       if (this.paymentType === 'Receive') {
@@ -364,28 +370,28 @@ export class Payment extends Transactional {
       }
     }
 
-    await this.applyWriteOffPosting(posting);
+    await this.applyWriteOffPosting(posting, ledgerAmounts);
     return posting;
   }
 
-  async applyWriteOffPosting(posting: LedgerPosting) {
-    const writeoff = this.writeoff as Money;
-    if (writeoff.isZero()) {
+  async applyWriteOffPosting(
+    posting: LedgerPosting,
+    ledgerAmounts: ReturnType<typeof getWriteOffLedgerAmounts>
+  ) {
+    if (ledgerAmounts.writeOff.isZero()) {
       return posting;
     }
 
-    const account = this.account as string;
-    const paymentAccount = this.paymentAccount as string;
     const writeOffAccount = this.fyo.singles.AccountingSettings!
       .writeOffAccount as string;
 
-    if (this.paymentType === 'Pay') {
-      await posting.credit(paymentAccount, writeoff);
-      await posting.debit(writeOffAccount, writeoff);
+    if (ledgerAmounts.writeOffIsDebit) {
+      await posting.debit(writeOffAccount, ledgerAmounts.writeOff);
     } else {
-      await posting.debit(account, writeoff);
-      await posting.credit(writeOffAccount, writeoff);
+      await posting.credit(writeOffAccount, ledgerAmounts.writeOff);
     }
+
+    return posting;
   }
 
   async validateReferences() {
@@ -425,7 +431,9 @@ export class Payment extends Transactional {
       );
     }
 
-    const amount = this.amount as Money;
+    const amount = (this.amount as Money).add(
+      this.writeoff ?? this.fyo.pesa(0)
+    );
 
     if (amount.gt(0) && amount.lte(outstandingAmount)) {
       return;

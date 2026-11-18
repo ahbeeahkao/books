@@ -17,7 +17,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.1'
+          node-version: '22.14.0'
 
       - name: Set yarn version
         run: yarn set version 1.22.18
@@ -27,6 +27,11 @@ jobs:
 
       - name: Install Dependencies
         run: yarn
+
+      - name: Platform preflight
+        run: |
+          yarn check:toolchain
+          yarn check:platform
 
       - name: Lint
         run: yarn lint

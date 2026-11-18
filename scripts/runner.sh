@@ -1,10 +1,11 @@
-#! /usr/bin/env zsh
-
-# basically uses electron's node to prevent
-# mismatch in NODE_MODULE_VERSION when running
-# better-sqlite3
-
+#!/usr/bin/env bash
+# Electron's Node keeps native modules on the same ABI as the desktop app.
 export TS_NODE_COMPILER_OPTIONS='{"module":"commonjs"}'
+export TS_NODE_TRANSPILE_ONLY=true
 export ELECTRON_RUN_AS_NODE=true
-alias electron_node="./node_modules/.bin/electron --require ts-node/register --require tsconfig-paths/register"
-electron_node $@
+
+exec ./node_modules/.bin/electron \
+  --require ./scripts/testSetup.js \
+  --require ts-node/register \
+  --require tsconfig-paths/register \
+  "$@"

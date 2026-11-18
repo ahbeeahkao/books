@@ -26,6 +26,8 @@ const frappeBooksConfig = {
   ],
   files: '**',
   extends: null,
+  npmRebuild: true,
+  buildDependenciesFromSource: true,
   directories: {
     output: packageDirPath,
     app: buildDirPath,
@@ -35,9 +37,7 @@ const frappeBooksConfig = {
     artifactName: '${productName}-v${version}-mac-${arch}.${ext}',
     category: 'public.app-category.finance',
     icon: 'build/icon.icns',
-    notarize: {
-      teamId: process.env.APPLE_TEAM_ID || '',
-    },
+    notarize: false,
     hardenedRuntime: true,
     gatekeeperAssess: false,
     darkModeSupport: false,
@@ -46,19 +46,17 @@ const frappeBooksConfig = {
     publish: ['github'],
   },
   win: {
-    publisherName: 'Frappe Technologies Pvt. Ltd.',
     artifactName: '${productName}-v${version}-windows-${arch}.${ext}',
-    signDlls: true,
     icon: 'build/icon.ico',
     publish: ['github'],
     target: [
       {
         target: 'nsis',
-        arch: ['x64', 'ia32'],
+        arch: ['x64'],
       },
       {
         target: 'portable',
-        arch: ['x64', 'ia32'],
+        arch: ['x64'],
       },
     ],
   },
@@ -66,9 +64,15 @@ const frappeBooksConfig = {
     oneClick: false,
     perMachine: false,
     allowToChangeInstallationDirectory: true,
-    installerIcon: 'build/installericon.ico',
-    uninstallerIcon: 'build/uninstallericon.ico',
+    installerIcon: 'build/installerIcon.ico',
+    uninstallerIcon: 'build/uninstallerIcon.ico',
     publish: ['github'],
+  },
+  deb: {
+    afterRemove: 'build/scripts/linux/after-remove.sh',
+  },
+  rpm: {
+    afterRemove: 'build/scripts/linux/after-remove.sh',
   },
   linux: {
     icon: 'build/icons',
@@ -82,7 +86,7 @@ const frappeBooksConfig = {
       },
       {
         target: 'AppImage',
-        arch: ['x64'],
+        arch: ['x64', 'arm64'],
       },
       {
         target: 'rpm',

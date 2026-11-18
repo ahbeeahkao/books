@@ -1,9 +1,9 @@
 # Phase 1 Design / Impact Note
 
-**Date:** 2026-11-04  
-**Branch:** `arena/a27de3bc-books` (active)  
-**Baseline:** `0a4be28` / `stabilization-pass-3`  
-**Status:** CP1–CP5 implemented; PR creation is the final step
+**Date:** 2026-11-04
+**Branch:** `arena/a27de3bc-books` (active)
+**Baseline:** `0a4be28` / `stabilization-pass-3`
+**Status:** CP1–CP5 merged; code-resolvable P0–P2 upstream parity fixes verified before new features
 
 This note converted the confirmed roadmap decisions into a concrete implementation plan for the archived Electron/Vue/SQLite Books fork and now records the CP1–CP5 outcomes.
 
@@ -30,7 +30,7 @@ Stabilization passes 1–3 are complete and pushed:
 
 Current verification baseline: full tape suite 1024/1024, `vue-tsc --noEmit` 0 errors, ESLint 0 errors/0 warnings, Prettier clean, `build --nopackage` passes.
 
-Local toolchain remains Node `v22.22.3` with a locked exact-spec npm install; README expects Node `20.18.1`. `better-sqlite3@9.6.0` and `global-jsdom` are local-only verification aids, not manifest changes. No `package-lock.json` is persisted.
+Local toolchain remains Node `v22.22.3` with a locked exact-spec npm install; README expects Node `20.18.1`. Historical local verification used `better-sqlite3@9.6.0` and `global-jsdom`; the current manifest pins `better-sqlite3@13.0.3` after the Node 22 CI native-module correction. No `package-lock.json` is persisted.
 
 ## Phase 1 objectives
 
@@ -341,11 +341,11 @@ Existing migration suites `backend/database/tests/testMigration.spec.ts` and `ba
 4. **CP4 — POS stock validator.** Extract the shared validator, remove duplicate checks, add stock tests.
 5. **CP5 — Custom-form decision.** Document/test per-DB storage, tighten exclusions; no storage migration.
 
-Each checkpoint has its own commit and push on `arena/a27de3bc-books`. A `phase-1` series of tags is optional; no checkpoint tag was created. A PR is opened after CP5.
+Each checkpoint has its own commit and push on `arena/a27de3bc-books`. A `phase-1` series of tags is optional; no checkpoint tag was created. PR #1 was merged as `f7b0f81`.
 
 ## Open items / residual risk
 
-- GitHub issue creation is still blocked by missing `issues=write`; the six templates remain in `STABILIZATION.md`.
+- GitHub issue creation is still blocked by missing `issues=write`; the six templates remain in `STABILIZATION.md`, and the detailed critical-upstream tracker is `UPSTREAM_CRITICAL_ISSUES.md`. P0/P1 stabilization should be reproduced and fixed before new features.
 - A real broken company `.db` is optional evidence for upstream P0 reports; pass-3 synthetic coverage is not a real-user reproduction.
 - P1 accounting/inventory issues still need concrete transaction data.
 - Release policy (#1515), ARM64 packaging (#1513), and Electron 22 (#1516) remain separate platform work.

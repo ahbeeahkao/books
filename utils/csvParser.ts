@@ -1,5 +1,8 @@
+import { stripUtf8Bom } from '../src/utils/stabilization';
+
 export function parseCSV(text: string): string[][] {
   //  Works on RFC 4180 csv
+  text = stripUtf8Bom(text);
   let rows = splitCsvBlock(text);
   if (rows.length === 1) {
     rows = splitCsvBlock(text, '\n');

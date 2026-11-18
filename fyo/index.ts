@@ -1,4 +1,5 @@
 import { getMoneyMaker, MoneyMaker } from 'pesa';
+import { getCurrencyDisplayPrecision } from '../src/utils/stabilization';
 import { Field, FieldType } from 'schemas/types';
 import { getIsNullOrUndef } from 'utils';
 import { markRaw } from 'vue';
@@ -150,9 +151,10 @@ export class Fyo {
 
     const precision: number =
       (acc.internalPrecision as number) ?? DEFAULT_INTERNAL_PRECISION;
-    const display: number =
+    const configuredDisplay: number =
       (acc.displayPrecision as number) ?? DEFAULT_DISPLAY_PRECISION;
     const currency: string = (acc.currency as string) ?? DEFAULT_CURRENCY;
+    const display = getCurrencyDisplayPrecision(currency, configuredDisplay);
 
     this.pesa = getMoneyMaker({
       currency,

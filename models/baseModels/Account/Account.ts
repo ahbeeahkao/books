@@ -10,6 +10,7 @@ import {
   FormulaMap,
 } from 'fyo/model/types';
 import { ModelNameEnum } from 'models/types';
+import { isRootAccountRecreatable } from 'src/utils/reconciliation';
 import { QueryFilter } from 'utils/db/types';
 import { AccountRootType, AccountRootTypeEnum, AccountType } from './types';
 
@@ -38,10 +39,26 @@ export class Account extends Doc {
     /**
      * Added here cause rootAccounts don't have parents
      * they are created during initialization. if this is
-     * added to the schema it will cause NOT NULL errors
+     * added to the schema it will cause NOT NULL errors.
+     *
+     * After setup, an explicit top-level group with a rootType may be
+     * recreated (#1535); ordinary child accounts still require a parent.
      */
 
-    parentAccount: () => !!this.fyo.singles?.AccountingSettings?.setupComplete,
+    parentAccount: () => {
+      const setupComplete =
+        !!this.fyo.singles?.AccountingSettings?.setupComplete;
+      if (!setupComplete) {
+        return false;
+      }
+
+      return !isRootAccountRecreatable({
+        setupComplete,
+        rootType: this.rootType,
+        isGroup: Boolean(this.get('isGroup')),
+        parentAccount: this.parentAccount,
+      });
+    },
   };
 
   static defaults: DefaultMap = {

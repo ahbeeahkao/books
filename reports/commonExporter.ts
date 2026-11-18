@@ -3,6 +3,7 @@ import { Action } from 'fyo/model/types';
 import { Verb } from 'fyo/telemetry/types';
 import { getSavePath, showExportInFolder } from 'src/utils/ui';
 import { getIsNullOrUndef } from 'utils';
+import { sanitizeFiniteNumber, withExcelBom } from '../src/utils/stabilization';
 import { generateCSV } from 'utils/csvParser';
 import { Report } from './Report';
 import { ExportExtention, ReportCell } from './types';
@@ -130,7 +131,7 @@ function getJsonData(report: Report): string {
 
 export function getCsvData(report: Report): string {
   const csvMatrix = convertReportToCSVMatrix(report);
-  return generateCSV(csvMatrix);
+  return withExcelBom(generateCSV(csvMatrix));
 }
 
 function convertReportToCSVMatrix(report: Report): unknown[][] {
@@ -172,24 +173,45 @@ function getValueFromCell(cell: ReportCell, displayPrecision: number) {
     return rawValue.toISOString();
   }
 
-  if (typeof rawValue === 'number') {
-    const value = rawValue.toFixed(displayPrecision);
+  const numberValue = getFiniteNumberFromRawValue(rawValue);
+  if (numberValue !== undefined) {
+    const value = numberValue.toFixed(displayPrecision);
 
     /**
      * remove insignificant zeroes
      */
-    if (value.endsWith('0'.repeat(displayPrecision))) {
+    if (displayPrecision > 0 && value.endsWith('0'.repeat(displayPrecision))) {
       return value.slice(0, -displayPrecision - 1);
     }
 
     return value;
   }
 
-  if (getIsNullOrUndef(cell)) {
+  if (getIsNullOrUndef(rawValue)) {
     return '';
   }
 
   return rawValue;
+}
+
+function getFiniteNumberFromRawValue(rawValue: unknown): number | undefined {
+  if (typeof rawValue === 'number') {
+    return sanitizeFiniteNumber(rawValue);
+  }
+
+  /**
+   * Report cells can carry a Money-like object with a `float` getter. Exporting
+   * the object itself produces `[object Object]` or opaque random-looking
+   * values in customer-balance CSVs (#1394).
+   */
+  if (rawValue && typeof rawValue === 'object' && 'float' in rawValue) {
+    const float = (rawValue as { float?: unknown }).float;
+    if (typeof float === 'number') {
+      return sanitizeFiniteNumber(float);
+    }
+  }
+
+  return undefined;
 }
 
 export async function saveExportData(

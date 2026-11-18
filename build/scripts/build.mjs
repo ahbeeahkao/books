@@ -63,10 +63,12 @@ async function buildMainProcessSource() {
 }
 
 async function buildRendererProcessSource() {
-  const base = 'app://';
   const outDir = path.join(buildDirPath, 'src');
   await vite.build({
-    base: `/${base}`,
+    // Relative asset URLs keep scripts/styles on the app://. origin. Absolute
+    // app://assets URLs are treated as a different origin by Electron 45 and
+    // are blocked before the renderer can mount.
+    base: './',
     root: path.join(root, 'src'),
     build: { outDir, sourcemap: true },
     plugins: [vue()],
@@ -86,7 +88,6 @@ async function buildRendererProcessSource() {
       },
     },
   });
-  removeBaseLeadingSlash(outDir, base);
 }
 
 /**
@@ -160,25 +161,4 @@ async function packageApp() {
   };
 
   await builder.build(buildOptions);
-}
-
-/**
- * Removes leading slash from all renderer files
- * electron uses a custom registered protocol to load the
- * files: "app://"
- *
- * @param {string} dir
- * @param {string} base
- */
-function removeBaseLeadingSlash(dir, base) {
-  for (const file of fs.readdirSync(dir)) {
-    const filePath = path.join(dir, file);
-    if (fs.lstatSync(filePath).isDirectory()) {
-      removeBaseLeadingSlash(filePath, base);
-      continue;
-    }
-
-    const contents = fs.readFileSync(filePath).toString('utf-8');
-    fs.writeFileSync(filePath, contents.replaceAll('/' + base, base));
-  }
 }

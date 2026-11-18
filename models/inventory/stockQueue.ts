@@ -1,3 +1,5 @@
+import { sanitizeFiniteNumber } from '../../src/utils/stabilization';
+
 export class StockQueue {
   quantity: number;
   value: number;
@@ -15,17 +17,21 @@ export class StockQueue {
     /**
      * Stock value maintained is based on the stock queue
      * ∴ FIFO by default. This returns FIFO valuation rate.
+     *
+     * A negative/zero quantity with a non-zero floating-point remainder can
+     * produce ±Infinity. Reports must receive a finite display value instead of
+     * constructing a Money object from Infinity.
      */
-    const valuation = this.value / this.quantity;
-    if (Number.isNaN(valuation)) {
-      return 0;
-    }
-
-    return valuation;
+    return sanitizeFiniteNumber(this.value / this.quantity);
   }
 
   inward(rate: number, quantity: number): null | number {
-    if (quantity <= 0 || rate < 0) {
+    if (
+      quantity <= 0 ||
+      rate < 0 ||
+      !Number.isFinite(quantity) ||
+      !Number.isFinite(rate)
+    ) {
       return null;
     }
 
@@ -33,12 +39,13 @@ export class StockQueue {
     /**
      * Update Moving Average valuation
      */
-    this.movingAverage =
+    this.movingAverage = sanitizeFiniteNumber(
       (this.movingAverage * this.quantity + inwardValue) /
-      (this.quantity + quantity);
+        (this.quantity + quantity)
+    );
 
     this.quantity += quantity;
-    this.value += inwardValue;
+    this.value = sanitizeFiniteNumber(this.value + inwardValue);
 
     const last = this.queue.at(-1);
     if (last?.rate !== rate) {
@@ -51,7 +58,11 @@ export class StockQueue {
   }
 
   outward(quantity: number): null | number {
-    if (this.quantity < quantity || quantity <= 0) {
+    if (
+      this.quantity < quantity ||
+      quantity <= 0 ||
+      !Number.isFinite(quantity)
+    ) {
       return null;
     }
 
@@ -79,10 +90,12 @@ export class StockQueue {
         this.queue.unshift({ rate: last.rate, quantity: quantityLeft });
       }
 
-      this.value -= last.rate * quantityRemoved;
+      this.value = sanitizeFiniteNumber(
+        this.value - last.rate * quantityRemoved
+      );
       incomingRate += quantityRemoved * last.rate;
     }
 
-    return incomingRate / quantity;
+    return sanitizeFiniteNumber(incomingRate / quantity);
   }
 }
