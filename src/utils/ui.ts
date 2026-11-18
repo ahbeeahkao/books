@@ -247,6 +247,54 @@ export function getActionsForDoc(doc?: Doc): Action[] {
         });
       },
     });
+    actions.push({
+      group: t`e-Invoice`,
+      label: t`Submit Malaysia e-Invoice (MyInvois)`,
+      async action() {
+        const {
+          buildMyInvoisUBLDocument,
+          submitToMyInvois,
+        } = await import('src/utils/malaysiaEInvoice');
+        const settings = doc.fyo.singles.EInvoiceSettings as unknown as Record<
+          string,
+          unknown
+        >;
+        try {
+          const ubl = buildMyInvoisUBLDocument(
+            {
+              name: String(doc.name ?? ''),
+              date: doc.date as Date | string | undefined,
+              party: doc.party as string | undefined,
+              netTotal: Number(
+                (doc.netTotal as { float?: number } | undefined)?.float ?? 0
+              ),
+              grandTotal: Number(
+                (doc.grandTotal as { float?: number } | undefined)?.float ?? 0
+              ),
+              isReturn: Boolean(doc.isReturn),
+            },
+            settings
+          );
+          const result = await submitToMyInvois(
+            ubl,
+            String(doc.name ?? ''),
+            settings
+          );
+          await doc.setMultiple({
+            eInvoiceUuid: result.uuid ?? '',
+            eInvoiceLongId: result.longId ?? '',
+            eInvoiceValidationUrl: result.validationUrl ?? '',
+          });
+          await doc.sync();
+          showToast({
+            type: 'success',
+            message: t`Submitted to MyInvois (${result.uuid ?? result.submissionUid}).`,
+          });
+        } catch (err) {
+          showToast({ type: 'error', message: String(err) });
+        }
+      },
+    });
   }
 
   return actions

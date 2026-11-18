@@ -61,7 +61,7 @@
     {
       "fieldname": "clientSecret",
       "label": "MyInvois Client Secret",
-      "fieldtype": "Data"
+      "fieldtype": "Password"
     }
   ],
   "quickEditFields": [

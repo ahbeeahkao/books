@@ -125,6 +125,27 @@
       "edit": false,
       "readOnly": true,
       "section": "References"
+    },
+    {
+      "fieldname": "eInvoiceUuid",
+      "fieldtype": "Data",
+      "label": "e-Invoice UUID",
+      "readOnly": true,
+      "section": "References"
+    },
+    {
+      "fieldname": "eInvoiceLongId",
+      "fieldtype": "Data",
+      "label": "e-Invoice Long ID",
+      "readOnly": true,
+      "section": "References"
+    },
+    {
+      "fieldname": "eInvoiceValidationUrl",
+      "fieldtype": "Data",
+      "label": "e-Invoice Validation URL",
+      "readOnly": true,
+      "section": "References"
     }
   ],
   "keywordFields": ["name", "party"]

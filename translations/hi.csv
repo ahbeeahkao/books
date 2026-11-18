@@ -1210,3 +1210,7 @@ john@doe.com,john@doe.com,
 "no need ${0} points to purchase this item","इस वस्तु को खरीदने के लिए ${0} अंक की आवश्यकता नहीं है",
 only,केवल,
 "to apply changes","परिवर्तन लागू करने के लिए",
+"Show Sidebar","Show Sidebar"
+"Hide Sidebar","Hide Sidebar"
+"Custom Report Builder","Custom Report Builder"
+"Malaysia e-Invoice","Malaysia e-Invoice"
