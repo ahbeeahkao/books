@@ -5,6 +5,8 @@
 2. Complete the **Setup Wizard**: enter your Company Name, Country, Base Currency, and Fiscal Year.
 3. Your data is stored locally in a single SQLite `.db` file. Before opening any existing `.db`, Frappe Books automatically creates a timestamped backup in the `backups/` folder next to your `.db` file (keeping the latest 10 backups).
 
+![Frappe Books Dashboard](https://user-images.githubusercontent.com/29507195/207267857-4ae48890-3fb2-4046-80cf-3256b46c72a0.png)
+
 ---
 
 ## 2. Core Accounting & Invoicing
@@ -39,6 +41,8 @@
 - **Built-in Reports:** Open **General Ledger**, **Profit And Loss**, **Balance Sheet**, **Trial Balance**, and **Stock** reports from **Reports** in the sidebar.
 
 ![General Ledger](https://github.com/user-attachments/assets/58d8bcdf-1576-4008-b010-7054fb64a12d)
+
+![Profit and Loss](https://github.com/user-attachments/assets/11bd67d1-d808-496b-ac4d-ef68c18b9419)
 - **Custom Report Builder:**
   1. Go to **Reports → Custom Report Builder**.
   2. Choose a **Base Document** (`SalesInvoice`, `PurchaseInvoice`, `Payment`, `JournalEntry`, `Account`, `Item`, `Party`).
