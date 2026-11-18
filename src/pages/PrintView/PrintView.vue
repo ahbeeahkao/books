@@ -34,6 +34,14 @@
         {{ helperMessage }}
       </div>
 
+      <div
+        v-if="doc?.eInvoiceValidationUrl"
+        class="mx-auto mb-3 max-w-2xl rounded border p-3 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
+      >
+        <p class="font-semibold">{{ t`MyInvois e-Invoice Validation` }}</p>
+        <p class="break-all">{{ doc.eInvoiceValidationUrl }}</p>
+      </div>
+
       <!-- Template Container -->
       <PrintContainer
         v-if="printProps"
