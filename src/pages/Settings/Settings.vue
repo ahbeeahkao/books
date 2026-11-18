@@ -9,14 +9,7 @@
       <FormHeader
         :form-title="tabLabels[activeTab] ?? ''"
         :form-sub-title="t`Settings`"
-        class="
-          sticky
-          top-0
-          bg-white
-          dark:bg-gray-890
-          border-b
-          dark:border-gray-800
-        "
+        class="sticky top-0 bg-white dark:bg-gray-890 border-b dark:border-gray-800"
       >
       </FormHeader>
 
@@ -44,20 +37,7 @@
       <!-- Tab Bar -->
       <div
         v-if="groupedFields && groupedFields.size > 1"
-        class="
-          mt-auto
-          px-4
-          pb-4
-          flex
-          gap-8
-          border-t
-          dark:border-gray-800
-          flex-shrink-0
-          sticky
-          bottom-0
-          bg-white
-          dark:bg-gray-890
-        "
+        class="mt-auto px-4 pb-4 flex gap-8 border-t dark:border-gray-800 flex-shrink-0 sticky bottom-0 bg-white dark:bg-gray-890"
       >
         <div
           v-for="key of groupedFields.keys()"
@@ -129,6 +109,7 @@ export default defineComponent({
         ModelNameEnum.InventorySettings,
         ModelNameEnum.Defaults,
         ModelNameEnum.POSSettings,
+        ModelNameEnum.EInvoiceSettings,
         ModelNameEnum.ERPNextSyncSettings,
         ModelNameEnum.PrintSettings,
         ModelNameEnum.SystemSettings,
@@ -149,6 +130,7 @@ export default defineComponent({
         [ModelNameEnum.InventorySettings]: this.t`Inventory`,
         [ModelNameEnum.Defaults]: this.t`Defaults`,
         [ModelNameEnum.POSSettings]: this.t`POS Settings`,
+        [ModelNameEnum.EInvoiceSettings]: this.t`Malaysia e-Invoice`,
         [ModelNameEnum.ERPNextSyncSettings]: this.t`ERPNext Sync`,
         [ModelNameEnum.SystemSettings]: this.t`System`,
       };
@@ -165,6 +147,7 @@ export default defineComponent({
         ModelNameEnum.InventorySettings,
         ModelNameEnum.Defaults,
         ModelNameEnum.POSSettings,
+        ModelNameEnum.EInvoiceSettings,
         ModelNameEnum.ERPNextSyncSettings,
         ModelNameEnum.PrintSettings,
         ModelNameEnum.SystemSettings,
