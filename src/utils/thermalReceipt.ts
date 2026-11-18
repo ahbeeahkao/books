@@ -32,9 +32,13 @@ export function buildThermalReceiptHtml(input: ThermalReceiptInput): string {
     )
     .join('');
 
-  const qrBlock = input.eInvoiceValidationUrl
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(
+      input.eInvoiceValidationUrl
+    )}`;
+    const qrBlock = input.eInvoiceValidationUrl
     ? `<div style="text-align:center;margin-top:8px;font-size:10px;word-break:break-all;">
         <div>MyInvois Validation:</div>
+        <img src="${qrUrl}" alt="MyInvois QR" style="width:96px;height:96px;margin:4px auto;display:block;" />
         <div>${input.eInvoiceValidationUrl}</div>
       </div>`
     : '';
