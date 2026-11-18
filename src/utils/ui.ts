@@ -206,6 +206,55 @@ export function getActionsForDoc(doc?: Doc): Action[] {
     actions.push(...viewActions);
   }
 
+  if (doc?.schemaName === 'SalesInvoice') {
+    actions.push({
+      group: t`Print`,
+      label: t`Print 80mm Thermal Receipt`,
+      async action() {
+        const { buildThermalReceiptHtml } = await import(
+          'src/utils/thermalReceipt'
+        );
+        const items = ((doc.items as Record<string, unknown>[]) ?? []).map(
+          (row) => ({
+            name: String(row.item ?? ''),
+            qty: Number(row.quantity ?? 1),
+            rate: Number(
+              (row.rate as { float?: number } | undefined)?.float ?? 0
+            ),
+            amount: Number(
+              (row.amount as { float?: number } | undefined)?.float ?? 0
+            ),
+          })
+        );
+        const html = buildThermalReceiptHtml({
+          companyName: String(
+            doc.fyo.singles.AccountingSettings?.companyName ?? 'Frappe Books'
+          ),
+          invoiceName: String(doc.name ?? ''),
+          date: doc.date ? new Date(doc.date as string).toISOString().slice(0, 10) : '',
+          customer: doc.party ? String(doc.party) : undefined,
+          items,
+          netTotal: Number(
+            (doc.netTotal as { float?: number } | undefined)?.float ?? 0
+          ),
+          grandTotal: Number(
+            (doc.grandTotal as { float?: number } | undefined)?.float ?? 0
+          ),
+          eInvoiceValidationUrl: doc.eInvoiceValidationUrl
+            ? String(doc.eInvoiceValidationUrl)
+            : undefined,
+        });
+        const win = window.open('', '_blank', 'width=360,height=600');
+        if (win) {
+          win.document.write(html);
+          win.document.close();
+          win.focus();
+          win.print();
+        }
+      },
+    });
+  }
+
   if (
     doc?.schemaName === 'SalesInvoice' &&
     doc.fyo.singles.EInvoiceSettings?.enableEInvoice
