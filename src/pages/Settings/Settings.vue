@@ -1,6 +1,12 @@
 <template>
   <FormContainer>
     <template #header>
+      <Button
+        v-if="activeTab === 'SystemSettings'"
+        @click="exportSupportLogs"
+      >
+        {{ t`Export Support Logs` }}
+      </Button>
       <Button v-if="canSave" type="primary" @click="sync">
         {{ t`Save` }}
       </Button>
