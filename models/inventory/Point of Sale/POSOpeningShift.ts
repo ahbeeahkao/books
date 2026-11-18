@@ -9,8 +9,11 @@ export class POSOpeningShift extends Doc {
   openingDate?: Date;
 
   get openingCashAmount() {
-    if (!this.openingCash) {
-      return this.fyo.pesa(0);
+    if (!this.openingCash?.length) {
+      const cashRow = this.openingAmounts?.find(
+        (row) => row.paymentMethod === 'Cash'
+      );
+      return cashRow?.amount ?? this.fyo.pesa(0);
     }
 
     let openingAmount = this.fyo.pesa(0);

@@ -10,8 +10,11 @@ export class POSClosingShift extends Doc {
   openingShift?: string;
 
   get closingCashAmount() {
-    if (!this.closingCash) {
-      return this.fyo.pesa(0);
+    if (!this.closingCash?.length) {
+      const cashRow = this.closingAmounts?.find(
+        (row) => row.paymentMethod === 'Cash'
+      );
+      return cashRow?.closingAmount ?? this.fyo.pesa(0);
     }
 
     let closingAmount = this.fyo.pesa(0);
