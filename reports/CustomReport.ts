@@ -127,11 +127,7 @@ export class CustomReport extends Report {
     const filtered = applyCustomFilters(rows, filters);
 
     this.reportData = filtered.map((row) => {
-      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-      const cells: {
-        rawValue: string | number | boolean | null;
-        value: string;
-      }[] = this.columns.map((col) => {
+      const cells = (this.columns as ColumnField[]).map((col) => {
         const val = row[col.fieldname] as
           | string
           | number
