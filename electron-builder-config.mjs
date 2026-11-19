@@ -64,6 +64,8 @@ const frappeBooksConfig = {
     oneClick: false,
     perMachine: false,
     allowToChangeInstallationDirectory: true,
+    deleteAppDataOnUninstall: false,
+    include: 'build/installer.nsh',
     installerIcon: 'build/installerIcon.ico',
     uninstallerIcon: 'build/uninstallerIcon.ico',
     publish: ['github'],
