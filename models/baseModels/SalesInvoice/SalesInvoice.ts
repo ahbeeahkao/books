@@ -189,7 +189,7 @@ export class SalesInvoice extends Invoice {
       const ubl = buildMyInvoisUBLDocument(
         {
           name: String(this.name ?? ''),
-          date: this.date as Date | string | undefined,
+          date: this.date,
           party: this.party as string | undefined,
           netTotal: Number(
             (this.netTotal as { float?: number } | undefined)?.float ?? 0
