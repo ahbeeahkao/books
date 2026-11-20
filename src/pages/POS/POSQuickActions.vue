@@ -344,6 +344,37 @@
       Item Enquiry
     </span>
   </div>
+  <div class="relative group">
+    <div
+      class="bg-gray-100 p-1.5 rounded-md cursor-pointer"
+      @click="() => $emit('emitPrintThermalReceipt')"
+    >
+      <FeatherIcon name="printer" class="w-5 h-5 text-black" />
+    </div>
+    <span
+      class="
+        p-2
+        mb-2
+        w-28
+        absolute
+        bottom-full
+        left-1/2
+        transform
+        -translate-x-1/2
+        text-center
+        opacity-0
+        bg-gray-100
+        text-black text-xs
+        rounded-md
+        transition-opacity
+        duration-300
+        group-hover:opacity-100
+        dark:bg-gray-800 dark:text-white
+      "
+    >
+      {{ t`Thermal Receipt` }}
+    </span>
+  </div>
 </template>
 
 <script lang="ts">

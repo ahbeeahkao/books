@@ -10,7 +10,25 @@
     </PageHeader>
 
     <div class="p-4 grid grid-cols-12 gap-4 overflow-auto flex-1">
-      <div class="col-span-4 space-y-4 border-r dark:border-gray-800 pr-4">
+      <div
+        class="col-span-12 lg:col-span-4 space-y-4 lg:border-r dark:border-gray-800 lg:pr-4"
+      >
+        <div>
+          <label class="block text-sm font-medium mb-1 dark:text-gray-200">
+            {{ t`Quick Presets (Malaysia)` }}
+          </label>
+          <div class="flex flex-wrap gap-1.5">
+            <Button
+              v-for="preset in malaysiaPresets"
+              :key="preset.title"
+              class="text-xs"
+              @click="applyPreset(preset)"
+            >
+              {{ preset.title }}
+            </Button>
+          </div>
+        </div>
+
         <div v-if="savedReports.length">
           <label class="block text-sm font-medium mb-1 dark:text-gray-200">
             {{ t`Load Saved Report` }}
@@ -173,9 +191,19 @@
             </tr>
           </tbody>
         </table>
-        <p v-else class="text-sm text-gray-500 dark:text-gray-400">
-          {{ t`Select columns and click Run Report to preview results.` }}
-        </p>
+        <div
+          v-else
+          class="flex flex-col items-center justify-center h-64 rounded-lg border border-dashed dark:border-gray-700 p-6 text-center"
+        >
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+            {{ t`No report data yet` }}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 max-w-md">
+            {{
+              t`Pick a Base Document and click Run Report, or try a Quick Preset on the left (Sales by Customer, Overdue Invoices, MyInvois Status).`
+            }}
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -201,6 +229,46 @@ export default defineComponent({
   components: { PageHeader, Button },
   data() {
     return {
+      malaysiaPresets: [
+        {
+          title: 'Sales by Customer (MYR)',
+          baseModel: ModelNameEnum.SalesInvoice,
+          columns: [
+            'name',
+            'date',
+            'party',
+            'netTotal',
+            'grandTotal',
+            'outstandingAmount',
+          ],
+          filters: [] as CustomReportFilter[],
+        },
+        {
+          title: 'Overdue Customer Invoices',
+          baseModel: ModelNameEnum.SalesInvoice,
+          columns: ['name', 'date', 'party', 'grandTotal', 'outstandingAmount'],
+          filters: [
+            {
+              fieldname: 'outstandingAmount',
+              operator: '>',
+              value: '0',
+            },
+          ] as CustomReportFilter[],
+        },
+        {
+          title: 'MyInvois e-Invoice Status',
+          baseModel: ModelNameEnum.SalesInvoice,
+          columns: [
+            'name',
+            'date',
+            'party',
+            'grandTotal',
+            'eInvoiceStatus',
+            'eInvoiceUuid',
+          ],
+          filters: [] as CustomReportFilter[],
+        },
+      ],
       title: 'My Custom Report',
       baseModel: 'SalesInvoice',
       baseModels: [
@@ -264,6 +332,18 @@ export default defineComponent({
     },
   },
   methods: {
+    async applyPreset(preset: {
+      title: string;
+      baseModel: ModelNameEnum;
+      columns: string[];
+      filters: CustomReportFilter[];
+    }) {
+      this.title = preset.title;
+      this.baseModel = preset.baseModel;
+      this.selectedFields = [...preset.columns];
+      this.filters = preset.filters.map((f) => ({ ...f }));
+      await this.runReport();
+    },
     async fetchSavedReports() {
       this.savedReports = (await fyo.db.getAll(ModelNameEnum.CustomReport, {
         fields: ['name', 'title', 'baseModel', 'columnsJson', 'filtersJson'],

@@ -153,6 +153,7 @@ import {
 import { Item } from 'models/baseModels/Item/Item';
 import { Shipment } from 'models/inventory/Shipment';
 import { routeTo, toggleSidebar } from 'src/utils/ui';
+import { buildThermalReceiptHtml } from 'src/utils/thermalReceipt';
 import { shortcutsKey } from 'src/utils/injectionKeys';
 import PageHeader from 'src/components/PageHeader.vue';
 import { computed, defineComponent, inject } from 'vue';
@@ -1295,6 +1296,43 @@ export default defineComponent({
         type: 'error',
         message: t`Free items out of stock: ${outOfStockFreeItems.join(', ')}`,
       });
+    },
+    printThermalReceipt() {
+      if (!this.sinvDoc) {
+        return;
+      }
+      const items = (this.sinvDoc.items ?? []).map((it) => ({
+        name: String(it.item ?? ''),
+        qty: Number(it.quantity ?? 1),
+        rate: Number((it.rate as { float?: number } | undefined)?.float ?? 0),
+        amount: Number((it.amount as { float?: number } | undefined)?.float ?? 0),
+      }));
+      const html = buildThermalReceiptHtml({
+        companyName: String(this.fyo.singles.AccountingSettings?.companyName ?? 'Frappe Books'),
+        invoiceName: String(this.sinvDoc.name ?? ''),
+        date: String(this.sinvDoc.date ?? ''),
+        customer: this.sinvDoc.party ? String(this.sinvDoc.party) : undefined,
+        items,
+        netTotal: Number((this.sinvDoc.netTotal as { float?: number } | undefined)?.float ?? 0),
+        grandTotal: Number((this.sinvDoc.grandTotal as { float?: number } | undefined)?.float ?? 0),
+        eInvoiceValidationUrl: this.sinvDoc.eInvoiceValidationUrl
+          ? String(this.sinvDoc.eInvoiceValidationUrl)
+          : undefined,
+      });
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+      iframe.contentDocument?.open();
+      iframe.contentDocument?.write(`<html><body>${html}</body></html>`);
+      iframe.contentDocument?.close();
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => iframe.remove(), 1000);
     },
     async routeToSinvList() {
       if (!this.sinvDoc.items?.length) {

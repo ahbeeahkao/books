@@ -24,8 +24,9 @@
 **Frappe Books** (`ahbeeahkao/books`) is an actively maintained, offline-first desktop accounting and POS application built on Electron 45 and SQLite, tailored for SMEs, retail shops, pharmacies, and collectibles stores.
 
 ### Key Fork Enhancements
-- **Malaysia e-Invoice (MyInvois):** Built-in Settings toggle, merchant TIN/BRN/MSIC configuration, UBL 2.1 JSON export, live MyInvois submission, auto-submit on invoice submit, and scannable QR validation on printouts.
-- **Custom Report Builder:** Create, filter, preview, and save custom reports on any core document (`SalesInvoice`, `PurchaseInvoice`, `Payment`, `Item`, `Party`, etc.).
+- **Malaysia e-Invoice (MyInvois):** Built-in Settings toggle, merchant TIN/BRN/MSIC configuration, UBL 2.1 JSON export, live MyInvois submission, auto-submit on invoice submit, **Validated** status badge, and scannable QR validation on printouts & thermal receipts.
+- **Custom Report Builder:** Create, filter, preview, and save custom reports on any core document (`SalesInvoice`, `PurchaseInvoice`, `Payment`, `Item`, `Party`, etc.), including one-click **Quick Presets (Malaysia)** (*Sales by Customer (MYR)*, *Overdue Customer Invoices*, *MyInvois e-Invoice Status*).
+- **Malaysian Thermal Receipt & POS Shortcut:** 58mm/80mm thermal receipt layout with Reg/TIN/SST header, itemized `qty x rate`, SST/Tax, payment method, MyInvois QR, *Terima Kasih* footer, and a one-click **Thermal Receipt** button in POS Quick Actions.
 - **POS & Inventory:** Multi-UOM barcode scanning, batch/expiry tracking, serial numbers, typed-cash POS shift fallback (when no denominations are configured), and 80mm thermal receipt printing.
 - **Reliability & Data Safety:** Automatic timestamped `.db` backups before opening, FTS5 search support, support diagnostics export, and an optional complete-uninstall prompt on Windows.
 
