@@ -157,6 +157,9 @@ router.afterEach(({ fullPath }) => {
   }
 
   localStorage.setItem('lastRoute', fullPath);
+  void import('src/utils/telemetry').then(({ trackFeatureUsage }) =>
+    trackFeatureUsage(`route:${fullPath}`)
+  );
 });
 
 export default router;

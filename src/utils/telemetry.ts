@@ -4,9 +4,16 @@ export interface TimingStats {
   maxMs: number;
 }
 
+export interface TelemetryErrorEntry {
+  timestamp: string;
+  source: string;
+  message: string;
+}
+
 export interface TelemetrySnapshot {
   features: Record<string, number>;
   timings: Record<string, TimingStats>;
+  recentErrors: TelemetryErrorEntry[];
   environment: {
     platform: string;
     screen: string;
@@ -15,6 +22,8 @@ export interface TelemetrySnapshot {
 
 const features: Record<string, number> = {};
 const timings: Record<string, TimingStats> = {};
+const recentErrors: TelemetryErrorEntry[] = [];
+const MAX_RECENT_ERRORS = 50;
 
 export function trackFeatureUsage(feature: string): void {
   if (!feature) {
