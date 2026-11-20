@@ -45,6 +45,19 @@ export function trackTiming(operation: string, durationMs: number): void {
   timings[operation] = current;
 }
 
+export function trackError(source: string, error: unknown): void {
+  const message =
+    error instanceof Error ? error.message : String(error ?? 'Unknown error');
+  recentErrors.push({
+    timestamp: new Date().toISOString(),
+    source,
+    message: message.slice(0, 500),
+  });
+  if (recentErrors.length > MAX_RECENT_ERRORS) {
+    recentErrors.shift();
+  }
+}
+
 export function getTelemetrySnapshot(): TelemetrySnapshot {
   const platform =
     typeof navigator !== 'undefined' ? navigator.platform : 'node';
@@ -56,6 +69,7 @@ export function getTelemetrySnapshot(): TelemetrySnapshot {
   return {
     features: { ...features },
     timings: { ...timings },
+    recentErrors: [...recentErrors],
     environment: { platform, screen },
   };
 }
@@ -67,4 +81,5 @@ export function clearTelemetry(): void {
   for (const k of Object.keys(timings)) {
     delete timings[k];
   }
+  recentErrors.length = 0;
 }
