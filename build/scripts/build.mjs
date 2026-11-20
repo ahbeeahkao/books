@@ -70,7 +70,7 @@ async function buildRendererProcessSource() {
     // are blocked before the renderer can mount.
     base: './',
     root: path.join(root, 'src'),
-    build: { outDir, sourcemap: true },
+    build: { outDir, sourcemap: false },
     plugins: [vue()],
     resolve: {
       alias: {
