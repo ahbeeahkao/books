@@ -26,6 +26,7 @@ const frappeBooksConfig = {
   ],
   files: ['**/*', '!**/tests/**', '!**/uitest/**', '!**/*.md', '!**/*.map'],
   compression: 'maximum',
+  electronLanguages: ['en-US'],
   extends: null,
   npmRebuild: true,
   buildDependenciesFromSource: true,
