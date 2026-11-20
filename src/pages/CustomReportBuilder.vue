@@ -191,9 +191,19 @@
             </tr>
           </tbody>
         </table>
-        <p v-else class="text-sm text-gray-500 dark:text-gray-400">
-          {{ t`Select columns and click Run Report to preview results.` }}
-        </p>
+        <div
+          v-else
+          class="flex flex-col items-center justify-center h-64 rounded-lg border border-dashed dark:border-gray-700 p-6 text-center"
+        >
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+            {{ t`No report data yet` }}
+          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 max-w-md">
+            {{
+              t`Pick a Base Document and click Run Report, or try a Quick Preset on the left (Sales by Customer, Overdue Invoices, MyInvois Status).`
+            }}
+          </p>
+        </div>
       </div>
     </div>
   </div>

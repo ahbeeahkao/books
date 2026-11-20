@@ -46,7 +46,14 @@
           class="w-20 h-20 shrink-0"
         />
         <div>
-          <p class="font-semibold">{{ t`MyInvois e-Invoice Validation` }}</p>
+          <div class="flex items-center gap-2 mb-1">
+            <p class="font-semibold">{{ t`MyInvois e-Invoice Validation` }}</p>
+            <span
+              class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"
+            >
+              {{ t`Validated` }}
+            </span>
+          </div>
           <p class="break-all">{{ doc.eInvoiceValidationUrl }}</p>
         </div>
       </div>
