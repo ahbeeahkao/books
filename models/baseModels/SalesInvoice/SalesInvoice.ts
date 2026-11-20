@@ -190,7 +190,7 @@ export class SalesInvoice extends Invoice {
         {
           name: String(this.name ?? ''),
           date: this.date,
-          party: this.party as string | undefined,
+          party: this.party,
           netTotal: Number(
             (this.netTotal as { float?: number } | undefined)?.float ?? 0
           ),
