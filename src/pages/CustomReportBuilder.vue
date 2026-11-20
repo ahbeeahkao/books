@@ -10,7 +10,25 @@
     </PageHeader>
 
     <div class="p-4 grid grid-cols-12 gap-4 overflow-auto flex-1">
-      <div class="col-span-4 space-y-4 border-r dark:border-gray-800 pr-4">
+      <div
+        class="col-span-12 lg:col-span-4 space-y-4 lg:border-r dark:border-gray-800 lg:pr-4"
+      >
+        <div>
+          <label class="block text-sm font-medium mb-1 dark:text-gray-200">
+            {{ t`Quick Presets (Malaysia)` }}
+          </label>
+          <div class="flex flex-wrap gap-1.5">
+            <Button
+              v-for="preset in malaysiaPresets"
+              :key="preset.title"
+              class="text-xs"
+              @click="applyPreset(preset)"
+            >
+              {{ preset.title }}
+            </Button>
+          </div>
+        </div>
+
         <div v-if="savedReports.length">
           <label class="block text-sm font-medium mb-1 dark:text-gray-200">
             {{ t`Load Saved Report` }}
@@ -201,6 +219,46 @@ export default defineComponent({
   components: { PageHeader, Button },
   data() {
     return {
+      malaysiaPresets: [
+        {
+          title: 'Sales by Customer (MYR)',
+          baseModel: ModelNameEnum.SalesInvoice,
+          columns: [
+            'name',
+            'date',
+            'party',
+            'netTotal',
+            'grandTotal',
+            'outstandingAmount',
+          ],
+          filters: [] as CustomReportFilter[],
+        },
+        {
+          title: 'Overdue Customer Invoices',
+          baseModel: ModelNameEnum.SalesInvoice,
+          columns: ['name', 'date', 'party', 'grandTotal', 'outstandingAmount'],
+          filters: [
+            {
+              fieldname: 'outstandingAmount',
+              operator: '>',
+              value: '0',
+            },
+          ] as CustomReportFilter[],
+        },
+        {
+          title: 'MyInvois e-Invoice Status',
+          baseModel: ModelNameEnum.SalesInvoice,
+          columns: [
+            'name',
+            'date',
+            'party',
+            'grandTotal',
+            'eInvoiceStatus',
+            'eInvoiceUuid',
+          ],
+          filters: [] as CustomReportFilter[],
+        },
+      ],
       title: 'My Custom Report',
       baseModel: 'SalesInvoice',
       baseModels: [
@@ -264,6 +322,18 @@ export default defineComponent({
     },
   },
   methods: {
+    async applyPreset(preset: {
+      title: string;
+      baseModel: ModelNameEnum;
+      columns: string[];
+      filters: CustomReportFilter[];
+    }) {
+      this.title = preset.title;
+      this.baseModel = preset.baseModel;
+      this.selectedFields = [...preset.columns];
+      this.filters = preset.filters.map((f) => ({ ...f }));
+      await this.runReport();
+    },
     async fetchSavedReports() {
       this.savedReports = (await fyo.db.getAll(ModelNameEnum.CustomReport, {
         fields: ['name', 'title', 'baseModel', 'columnsJson', 'filtersJson'],
